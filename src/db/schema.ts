@@ -1,62 +1,94 @@
 import {
-    pgTable,
-    serial,
-    varchar,
-    text,
-    integer,
-    boolean,
-    timestamp,
-    pgEnum,
-    jsonb,
+  pgTable,
+  serial,
+  varchar,
+  text,
+  integer,
+  boolean,
+  timestamp,
+  pgEnum,
+  jsonb,
 } from 'drizzle-orm/pg-core';
 
 export const projectTypeEnum = pgEnum('project_type', [
-    'ROOT',
-    'NOTE',
-    'MERMAID',
-    'QA',
-    'GITHUB',
-    'FAQ',
-    'MEMBER',
+  'ROOT',
+  'NOTE',
+  'MERMAID',
+  'QA',
+  'FILE',
+  'GITHUB',
+  'FAQ',
+  'MEMBER',
 ]);
 
 export const contentTypeEnum = pgEnum('content_type', [
-    'NOTE',
-    'MERMAID',
-    'QA',
+  'NOTE',
+  'MERMAID',
+  'QA',
 ]);
 
 export const projectCategories = pgTable('project_categories', {
-    id: serial('id').primaryKey(),
-    userId: integer('user_id').notNull(),
-    name: varchar('name', { length: 255 }).notNull(),
-    projectType: projectTypeEnum('project_type').default('NOTE').notNull(),
-    techType: varchar('tech_type', { length: 50 }),
-    description: text('description'),
-    parentId: integer('parent_id'),
-    displayOrder: integer('display_order').default(0).notNull(),
-    depth: integer('depth').default(0).notNull(),
-    icon: varchar('icon', { length: 100 }),
-    isActive: boolean('is_active').default(true).notNull(),
-    createdAt: timestamp('created_at').defaultNow().notNull(),
-    updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  id: serial('id').primaryKey(),
+  userId: integer('user_id').notNull(),
+  name: varchar('name', { length: 255 }).notNull(),
+  projectType: projectTypeEnum('project_type').default('NOTE').notNull(),
+  techType: varchar('tech_type', { length: 50 }),
+  description: text('description'),
+  parentId: integer('parent_id'),
+  displayOrder: integer('display_order').default(0).notNull(),
+  depth: integer('depth').default(0).notNull(),
+  icon: varchar('icon', { length: 100 }),
+  isActive: boolean('is_active').default(true).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
 
 export const projectContents = pgTable('project_contents', {
-    id: serial('id').primaryKey(),
-    categoryId: integer('category_id').notNull(),
-    userId: integer('user_id').notNull(),
-    title: varchar('title', { length: 255 }).notNull(),
-    content: text('content'),
-    contentType: contentTypeEnum('content_type').default('NOTE').notNull(),
-    metadata: jsonb('metadata'),
-    displayOrder: integer('display_order').default(0).notNull(),
-    isActive: boolean('is_active').default(true).notNull(),
-    createdAt: timestamp('created_at').defaultNow().notNull(),
-    updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  id: serial('id').primaryKey(),
+  categoryId: integer('category_id').notNull(),
+  userId: integer('user_id').notNull(),
+  title: varchar('title', { length: 255 }).notNull(),
+  content: text('content'),
+  contentType: contentTypeEnum('content_type').default('NOTE').notNull(),
+  metadata: jsonb('metadata'),
+  displayOrder: integer('display_order').default(0).notNull(),
+  isActive: boolean('is_active').default(true).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+// File type enum
+export const fileTypeEnum = pgEnum('file_type', [
+  'PDF',
+  'DOCX',
+  'XLSX',
+  'TXT',
+  'IMAGE',
+  'VIDEO',
+  'AUDIO',
+  'OTHER',
+]);
+
+// Category files table
+export const projectCategoryFiles = pgTable('project_category_files', {
+  id: serial('id').primaryKey(),
+  categoryId: integer('category_id').notNull(),
+  userId: integer('user_id').notNull(),
+  originalName: varchar('original_name', { length: 255 }).notNull(),
+  storedName: varchar('stored_name', { length: 255 }).notNull(),
+  s3Url: text('s3_url').notNull(),
+  filePath: text('file_path').notNull(),
+  fileSize: integer('file_size').notNull(),
+  mimeType: varchar('mime_type', { length: 100 }).notNull(),
+  fileType: fileTypeEnum('file_type').default('OTHER').notNull(),
+  displayOrder: integer('display_order').default(0).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow(),
 });
 
 export type ProjectCategory = typeof projectCategories.$inferSelect;
 export type NewProjectCategory = typeof projectCategories.$inferInsert;
 export type ProjectContent = typeof projectContents.$inferSelect;
 export type NewProjectContent = typeof projectContents.$inferInsert;
+export type ProjectCategoryFile = typeof projectCategoryFiles.$inferSelect;
+export type NewProjectCategoryFile = typeof projectCategoryFiles.$inferInsert;
