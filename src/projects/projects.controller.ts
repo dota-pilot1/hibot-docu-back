@@ -45,6 +45,20 @@ export class ProjectsController {
         return this.projectsService.createCategory(req.user.userId, dto);
     }
 
+    @Patch('categories/reorder')
+    @ApiOperation({ summary: 'Reorder categories' })
+    async reorderCategories(
+        @Request() req: any,
+        @Body() body: { categoryIds: number[]; parentId: number | null },
+    ) {
+        await this.projectsService.reorderCategories(
+            req.user.userId,
+            body.categoryIds,
+            body.parentId,
+        );
+        return { message: 'Categories reordered successfully' };
+    }
+
     @Patch('categories/:id')
     @ApiOperation({ summary: 'Update a category' })
     updateCategory(
@@ -72,6 +86,20 @@ export class ProjectsController {
     @ApiOperation({ summary: 'Create a new content' })
     createContent(@Request() req: any, @Body() dto: CreateContentDto) {
         return this.projectsService.createContent(req.user.userId, dto);
+    }
+
+    @Patch('contents/reorder')
+    @ApiOperation({ summary: 'Reorder contents' })
+    async reorderContents(
+        @Request() req: any,
+        @Body() body: { categoryId: number; contentIds: number[] },
+    ) {
+        await this.projectsService.reorderContents(
+            req.user.userId,
+            body.categoryId,
+            body.contentIds,
+        );
+        return { message: 'Contents reordered successfully' };
     }
 
     @Patch('contents/:id')

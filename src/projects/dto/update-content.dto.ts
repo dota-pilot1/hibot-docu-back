@@ -17,6 +17,15 @@ export class UpdateContentDto {
     @IsNumber()
     displayOrder?: number;
 
+    @ApiPropertyOptional({ example: 'NOTE', enum: ['NOTE', 'MERMAID', 'QA'] })
+    @IsOptional()
+    @IsString()
+    contentType?: string;
+
+    @ApiPropertyOptional({ example: {} })
+    @IsOptional()
+    metadata?: Record<string, any>;
+
     @ApiPropertyOptional({ example: true })
     @IsOptional()
     @IsBoolean()

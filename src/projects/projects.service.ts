@@ -175,6 +175,8 @@ export class ProjectsService {
                 categoryId: dto.categoryId,
                 title: dto.title,
                 content: dto.content,
+                contentType: (dto.contentType as any) || 'NOTE',
+                metadata: dto.metadata,
             })
             .returning();
 
@@ -200,7 +202,11 @@ export class ProjectsService {
 
         const [updated] = await db
             .update(projectContents)
-            .set({ ...dto, updatedAt: new Date() })
+            .set({
+                ...dto,
+                contentType: dto.contentType as any,
+                updatedAt: new Date(),
+            })
             .where(eq(projectContents.id, id))
             .returning();
 
@@ -224,6 +230,67 @@ export class ProjectsService {
             .update(projectContents)
             .set({ isActive: false, updatedAt: new Date() })
             .where(eq(projectContents.id, id));
+    }
+
+    async reorderCategories(
+        userId: number,
+        categoryIds: number[],
+        parentId: number | null = null,
+    ): Promise<void> {
+        console.log('[ProjectsService] reorderCategories', {
+            userId,
+            categoryIds,
+            parentId,
+        });
+
+        // Use a transaction to update all display orders
+        await db.transaction(async (tx) => {
+            for (let i = 0; i < categoryIds.length; i++) {
+                await tx
+                    .update(projectCategories)
+                    .set({
+                        displayOrder: i,
+                        parentId: parentId, // Update parent if it changed during drag
+                        updatedAt: new Date(),
+                    })
+                    .where(
+                        and(
+                            eq(projectCategories.id, categoryIds[i]),
+                            eq(projectCategories.userId, userId),
+                        ),
+                    );
+            }
+        });
+    }
+
+    async reorderContents(
+        userId: number,
+        categoryId: number,
+        contentIds: number[],
+    ): Promise<void> {
+        console.log('[ProjectsService] reorderContents', {
+            userId,
+            categoryId,
+            contentIds,
+        });
+
+        await db.transaction(async (tx) => {
+            for (let i = 0; i < contentIds.length; i++) {
+                await tx
+                    .update(projectContents)
+                    .set({
+                        displayOrder: i,
+                        categoryId: categoryId, // Ensure it's in the right category
+                        updatedAt: new Date(),
+                    })
+                    .where(
+                        and(
+                            eq(projectContents.id, contentIds[i]),
+                            eq(projectContents.userId, userId),
+                        ),
+                    );
+            }
+        });
     }
 
     // Helper method to build tree structure

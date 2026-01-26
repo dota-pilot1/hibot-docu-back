@@ -14,4 +14,13 @@ export class CreateContentDto {
     @IsOptional()
     @IsString()
     content?: string;
+    @ApiPropertyOptional({ example: 'NOTE', enum: ['NOTE', 'MERMAID', 'QA'] })
+    @IsOptional()
+    @IsString()
+    contentType?: string;
+
+    @ApiPropertyOptional({ example: {} })
+    @IsOptional()
+    metadata?: Record<string, any>;
 }
+

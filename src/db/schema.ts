@@ -7,13 +7,23 @@ import {
     boolean,
     timestamp,
     pgEnum,
+    jsonb,
 } from 'drizzle-orm/pg-core';
 
 export const projectTypeEnum = pgEnum('project_type', [
+    'ROOT',
     'NOTE',
+    'MERMAID',
+    'QA',
     'GITHUB',
     'FAQ',
     'MEMBER',
+]);
+
+export const contentTypeEnum = pgEnum('content_type', [
+    'NOTE',
+    'MERMAID',
+    'QA',
 ]);
 
 export const projectCategories = pgTable('project_categories', {
@@ -38,6 +48,8 @@ export const projectContents = pgTable('project_contents', {
     userId: integer('user_id').notNull(),
     title: varchar('title', { length: 255 }).notNull(),
     content: text('content'),
+    contentType: contentTypeEnum('content_type').default('NOTE').notNull(),
+    metadata: jsonb('metadata'),
     displayOrder: integer('display_order').default(0).notNull(),
     isActive: boolean('is_active').default(true).notNull(),
     createdAt: timestamp('created_at').defaultNow().notNull(),
