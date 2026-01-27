@@ -25,6 +25,7 @@ export const contentTypeEnum = pgEnum('content_type', [
   'NOTE',
   'MERMAID',
   'QA',
+  'FIGMA',
 ]);
 
 export const projectCategories = pgTable('project_categories', {
