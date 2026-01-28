@@ -21,6 +21,8 @@ export const projectTypeEnum = pgEnum('project_type', [
   'MEMBER',
 ]);
 
+export const userRoleEnum = pgEnum('user_role', ['ADMIN', 'USER']);
+
 export const contentTypeEnum = pgEnum('content_type', [
   'NOTE',
   'MERMAID',
@@ -113,6 +115,7 @@ export const users = pgTable('users', {
   email: varchar('email', { length: 255 }).notNull().unique(),
   password: varchar('password', { length: 255 }).notNull(),
   name: varchar('name', { length: 100 }),
+  role: userRoleEnum('role').default('USER').notNull(),
   isActive: boolean('is_active').default(true).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
