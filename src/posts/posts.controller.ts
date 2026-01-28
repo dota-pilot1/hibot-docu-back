@@ -26,6 +26,12 @@ export class PostsController {
     return this.postsService.findAll(query);
   }
 
+  @Get('my')
+  @UseGuards(JwtAuthGuard)
+  async findMyPosts(@Request() req: any) {
+    return this.postsService.findByAuthor(req.user.userId);
+  }
+
   @Get(':id')
   async findOne(@Param('id', ParseIntPipe) id: number) {
     return this.postsService.findOne(id);

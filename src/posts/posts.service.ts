@@ -97,6 +97,16 @@ export class PostsService {
     };
   }
 
+  async findByAuthor(userId: number): Promise<Post[]> {
+    const data = await db
+      .select()
+      .from(posts)
+      .where(eq(posts.authorId, userId))
+      .orderBy(desc(posts.createdAt));
+
+    return data;
+  }
+
   async findOne(id: number): Promise<Post & { authorName: string }> {
     const [post] = await db
       .select()
