@@ -1,12 +1,32 @@
-import { Controller, Get, Delete, UseGuards, Request } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Delete,
+  Post,
+  UseGuards,
+  Request,
+  UseInterceptors,
+  UploadedFile,
+} from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { UsersService } from './users.service';
+import { S3Service } from '../common/s3.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiTags,
+  ApiConsumes,
+} from '@nestjs/swagger';
+import { v4 as uuidv4 } from 'uuid';
 
 @ApiTags('users')
 @Controller('users')
 export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(
+    private readonly usersService: UsersService,
+    private readonly s3Service: S3Service,
+  ) {}
 
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get all users' })
@@ -23,5 +43,29 @@ export class UsersController {
   async deleteMe(@Request() req: any) {
     await this.usersService.delete(req.user.userId);
     return { success: true };
+  }
+
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Upload profile image' })
+  @ApiConsumes('multipart/form-data')
+  @UseGuards(JwtAuthGuard)
+  @Post('me/profile-image')
+  @UseInterceptors(FileInterceptor('file'))
+  async uploadProfileImage(
+    @Request() req: any,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    const ext = file.originalname.split('.').pop();
+    const storedName = `${uuidv4()}.${ext}`;
+    const imageUrl = await this.s3Service.uploadFile(
+      file,
+      'profile-images',
+      storedName,
+    );
+    const user = await this.usersService.updateProfileImage(
+      req.user.userId,
+      imageUrl,
+    );
+    return user;
   }
 }

@@ -66,4 +66,18 @@ export class UsersService {
   async delete(id: number): Promise<void> {
     await db.delete(users).where(eq(users.id, id));
   }
+
+  async updateProfileImage(
+    id: number,
+    profileImage: string,
+  ): Promise<Omit<User, 'password'>> {
+    const [updated] = await db
+      .update(users)
+      .set({ profileImage, updatedAt: new Date() })
+      .where(eq(users.id, id))
+      .returning();
+
+    const { password, ...result } = updated;
+    return result;
+  }
 }
