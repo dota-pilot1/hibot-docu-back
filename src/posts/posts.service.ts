@@ -10,6 +10,7 @@ import type { Post, NewPost } from '../db/schema';
 import { CreatePostDto } from './dto/create-post.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
 import { QueryPostDto } from './dto/query-post.dto';
+import { UsersService } from '../users/users.service';
 
 export interface PaginatedPosts {
   data: (Post & { authorName: string })[];
@@ -21,16 +22,17 @@ export interface PaginatedPosts {
   };
 }
 
-// 임시 사용자 데이터 (UsersService가 DB 기반이 아니므로)
-const users = [
-  { userId: 1, email: 'admin@daum.net' },
-  { userId: 2, email: 'user@example.com' },
-];
-
 @Injectable()
 export class PostsService {
+  constructor(private readonly usersService: UsersService) {}
   async findAll(query: QueryPostDto): Promise<PaginatedPosts> {
-    const { page = 1, limit = 10, sortBy = 'createdAt', sortOrder = 'desc', search } = query;
+    const {
+      page = 1,
+      limit = 10,
+      sortBy = 'createdAt',
+      sortOrder = 'desc',
+      search,
+    } = query;
     const offset = (page - 1) * limit;
 
     // 전체 개수 조회
@@ -75,8 +77,9 @@ export class PostsService {
     }
 
     // 작성자 이름 추가
+    const allUsers = await this.usersService.findAll();
     const dataWithAuthor = data.map((post) => {
-      const author = users.find((u) => u.userId === post.authorId);
+      const author = allUsers.find((u) => u.id === post.authorId);
       return {
         ...post,
         authorName: author?.email?.split('@')[0] || 'Unknown',
@@ -111,7 +114,8 @@ export class PostsService {
       .set({ viewCount: post.viewCount + 1 })
       .where(eq(posts.id, id));
 
-    const author = users.find((u) => u.userId === post.authorId);
+    const allUsers = await this.usersService.findAll();
+    const author = allUsers.find((u) => u.id === post.authorId);
     return {
       ...post,
       viewCount: post.viewCount + 1,
@@ -144,7 +148,9 @@ export class PostsService {
     }
 
     if (existing.authorId !== userId) {
-      throw new ForbiddenException('본인이 작성한 게시글만 수정할 수 있습니다.');
+      throw new ForbiddenException(
+        '본인이 작성한 게시글만 수정할 수 있습니다.',
+      );
     }
 
     const [updated] = await db
@@ -171,7 +177,9 @@ export class PostsService {
     }
 
     if (existing.authorId !== userId) {
-      throw new ForbiddenException('본인이 작성한 게시글만 삭제할 수 있습니다.');
+      throw new ForbiddenException(
+        '본인이 작성한 게시글만 삭제할 수 있습니다.',
+      );
     }
 
     await db.delete(posts).where(eq(posts.id, id));

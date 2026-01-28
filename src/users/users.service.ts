@@ -1,36 +1,65 @@
-import { Injectable } from '@nestjs/common';
-
-export type User = any;
+import { Injectable, ConflictException } from '@nestjs/common';
+import { eq } from 'drizzle-orm';
+import * as bcrypt from 'bcrypt';
+import { db } from '../db/client';
+import { users, User, NewUser } from '../db/schema';
 
 @Injectable()
 export class UsersService {
-    private readonly users = [
-        {
-            userId: 1,
-            email: 'admin@daum.net',
-            password: 'admin123', // Note: In a real app, use hashed passwords
-        },
-        {
-            userId: 2,
-            email: 'user@example.com',
-            password: 'password',
-        },
-    ];
+  async findOne(email: string): Promise<User | undefined> {
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(eq(users.email, email))
+      .limit(1);
+    return user;
+  }
 
-    async findOne(email: string): Promise<User | undefined> {
-        return this.users.find((user) => user.email === email);
+  async findById(id: number): Promise<User | undefined> {
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(eq(users.id, id))
+      .limit(1);
+    return user;
+  }
+
+  async findAll(): Promise<Omit<User, 'password'>[]> {
+    const allUsers = await db.select().from(users);
+    return allUsers.map(({ password, ...result }) => result);
+  }
+
+  async create(userData: {
+    email: string;
+    password: string;
+    name?: string;
+  }): Promise<Omit<User, 'password'>> {
+    // 이메일 중복 체크
+    const existing = await this.findOne(userData.email);
+    if (existing) {
+      throw new ConflictException('이미 존재하는 이메일입니다.');
     }
 
-    async findAll(): Promise<User[]> {
-        return this.users.map(({ password, ...result }) => result);
-    }
+    // 비밀번호 해싱
+    const hashedPassword = await bcrypt.hash(userData.password, 10);
 
-    async create(user: any): Promise<User> {
-        const newUser = {
-            ...user,
-            userId: this.users.length + 1,
-        };
-        this.users.push(newUser);
-        return newUser;
-    }
+    const [newUser] = await db
+      .insert(users)
+      .values({
+        email: userData.email,
+        password: hashedPassword,
+        name: userData.name || userData.email.split('@')[0],
+      })
+      .returning();
+
+    const { password, ...result } = newUser;
+    return result;
+  }
+
+  async validatePassword(
+    plainPassword: string,
+    hashedPassword: string,
+  ): Promise<boolean> {
+    return bcrypt.compare(plainPassword, hashedPassword);
+  }
 }
