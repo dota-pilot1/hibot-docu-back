@@ -1,0 +1,12 @@
+import { IsNotEmpty, IsString, MaxLength } from 'class-validator';
+
+export class CreatePostDto {
+  @IsNotEmpty({ message: '제목을 입력해주세요.' })
+  @IsString()
+  @MaxLength(255, { message: '제목은 255자 이하로 입력해주세요.' })
+  title: string;
+
+  @IsNotEmpty({ message: '내용을 입력해주세요.' })
+  @IsString()
+  content: string;
+}

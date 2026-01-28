@@ -87,9 +87,22 @@ export const projectCategoryFiles = pgTable('project_category_files', {
   updatedAt: timestamp('updated_at').defaultNow(),
 });
 
+// Posts table (게시판)
+export const posts = pgTable('posts', {
+  id: serial('id').primaryKey(),
+  title: varchar('title', { length: 255 }).notNull(),
+  content: text('content').notNull(),
+  authorId: integer('author_id').notNull(),
+  viewCount: integer('view_count').default(0).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
 export type ProjectCategory = typeof projectCategories.$inferSelect;
 export type NewProjectCategory = typeof projectCategories.$inferInsert;
 export type ProjectContent = typeof projectContents.$inferSelect;
 export type NewProjectContent = typeof projectContents.$inferInsert;
 export type ProjectCategoryFile = typeof projectCategoryFiles.$inferSelect;
 export type NewProjectCategoryFile = typeof projectCategoryFiles.$inferInsert;
+export type Post = typeof posts.$inferSelect;
+export type NewPost = typeof posts.$inferInsert;

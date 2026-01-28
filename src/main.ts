@@ -7,7 +7,13 @@ async function bootstrap() {
 
   // Enable CORS
   app.enableCors({
-    origin: ['http://localhost:4000', 'http://127.0.0.1:4000'],
+    origin: [
+      'http://localhost:4000',
+      'http://127.0.0.1:4000',
+      'https://d359limanz0pmj.cloudfront.net',
+      'https://hibot-docu.com',
+      'https://www.hibot-docu.com',
+    ],
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     credentials: true,
   });
