@@ -62,4 +62,8 @@ export class UsersService {
   ): Promise<boolean> {
     return bcrypt.compare(plainPassword, hashedPassword);
   }
+
+  async delete(id: number): Promise<void> {
+    await db.delete(users).where(eq(users.id, id));
+  }
 }
