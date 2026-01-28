@@ -165,7 +165,7 @@ export class PostsService {
     return updated;
   }
 
-  async remove(userId: number, id: number): Promise<void> {
+  async remove(userId: number, id: number, role?: string): Promise<void> {
     const [existing] = await db
       .select()
       .from(posts)
@@ -176,7 +176,8 @@ export class PostsService {
       throw new NotFoundException('게시글을 찾을 수 없습니다.');
     }
 
-    if (existing.authorId !== userId) {
+    // ADMIN은 모든 게시글 삭제 가능
+    if (role !== 'ADMIN' && existing.authorId !== userId) {
       throw new ForbiddenException(
         '본인이 작성한 게시글만 삭제할 수 있습니다.',
       );

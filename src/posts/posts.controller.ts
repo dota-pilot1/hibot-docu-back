@@ -19,7 +19,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 @Controller('posts')
 export class PostsController {
-  constructor(private readonly postsService: PostsService) { }
+  constructor(private readonly postsService: PostsService) {}
 
   @Get()
   async findAll(@Query() query: QueryPostDto) {
@@ -50,7 +50,7 @@ export class PostsController {
   @Delete(':id')
   @UseGuards(JwtAuthGuard)
   async remove(@Request() req: any, @Param('id', ParseIntPipe) id: number) {
-    await this.postsService.remove(req.user.userId, id);
+    await this.postsService.remove(req.user.userId, id, req.user.role);
     return { success: true };
   }
 }
