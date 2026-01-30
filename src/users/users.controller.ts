@@ -100,6 +100,39 @@ export class UsersController {
   }
 
   @ApiBearerAuth()
+  @ApiOperation({ summary: 'Update user role (Admin only)' })
+  @UseGuards(JwtAuthGuard)
+  @Patch(':id/role')
+  async updateRole(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body: { role: string },
+    @Request() req: any,
+  ) {
+    // Check if user is admin
+    const currentUser = await this.usersService.findById(req.user.userId);
+
+    if (!currentUser) {
+      throw new ForbiddenException('User not found');
+    }
+
+    if (currentUser.role !== 'ADMIN') {
+      throw new ForbiddenException('Only admins can update user roles');
+    }
+
+    // Prevent changing own role
+    if (id === req.user.userId) {
+      throw new ForbiddenException('Cannot change your own role');
+    }
+
+    // Validate role
+    if (!['USER', 'ADMIN'].includes(body.role)) {
+      throw new ForbiddenException('Invalid role. Must be USER or ADMIN');
+    }
+
+    return this.usersService.updateRole(id, body.role);
+  }
+
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Update user department' })
   @UseGuards(JwtAuthGuard)
   @Patch(':id/department')
