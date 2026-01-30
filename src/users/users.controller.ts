@@ -57,6 +57,11 @@ export class UsersController {
   async deleteUser(@Param('id', ParseIntPipe) id: number, @Request() req: any) {
     // Check if user is admin
     const currentUser = await this.usersService.findOne(req.user.userId);
+
+    if (!currentUser) {
+      throw new ForbiddenException('User not found');
+    }
+
     if (currentUser.role !== 'ADMIN') {
       throw new ForbiddenException('Only admins can delete users');
     }
