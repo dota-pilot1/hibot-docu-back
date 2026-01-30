@@ -98,7 +98,7 @@ export class UsersService {
   async updateRole(id: number, role: string): Promise<Omit<User, 'password'>> {
     const [updated] = await db
       .update(users)
-      .set({ role, updatedAt: new Date() })
+      .set({ role: role as 'USER' | 'ADMIN', updatedAt: new Date() })
       .where(eq(users.id, id))
       .returning();
 
