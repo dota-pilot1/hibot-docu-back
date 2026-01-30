@@ -8,6 +8,7 @@ import { ProjectsModule } from './projects/projects.module';
 import { CommonModule } from './common/common.module';
 import { AiModule } from './ai/ai.module';
 import { PostsModule } from './posts/posts.module';
+import { DepartmentsModule } from './departments/departments.module';
 
 @Module({
   imports: [
@@ -20,8 +21,9 @@ import { PostsModule } from './posts/posts.module';
     CommonModule,
     AiModule,
     PostsModule,
+    DepartmentsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule { }
+export class AppModule {}

@@ -80,4 +80,18 @@ export class UsersService {
     const { password, ...result } = updated;
     return result;
   }
+
+  async updateDepartment(
+    id: number,
+    departmentId: number | null,
+  ): Promise<Omit<User, 'password'>> {
+    const [updated] = await db
+      .update(users)
+      .set({ departmentId, updatedAt: new Date() })
+      .where(eq(users.id, id))
+      .returning();
+
+    const { password, ...result } = updated;
+    return result;
+  }
 }

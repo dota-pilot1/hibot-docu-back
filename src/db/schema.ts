@@ -89,6 +89,22 @@ export const projectCategoryFiles = pgTable('project_category_files', {
   updatedAt: timestamp('updated_at').defaultNow(),
 });
 
+// Departments table (부서/조직도)
+export const departments = pgTable('departments', {
+  id: serial('id').primaryKey(),
+  name: varchar('name', { length: 100 }).notNull(),
+  description: text('description'),
+  parentId: integer('parent_id'),
+  displayOrder: integer('display_order').default(0).notNull(),
+  depth: integer('depth').default(0).notNull(),
+  isActive: boolean('is_active').default(true).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+export type Department = typeof departments.$inferSelect;
+export type NewDepartment = typeof departments.$inferInsert;
+
 // Posts table (게시판)
 export const posts = pgTable('posts', {
   id: serial('id').primaryKey(),
@@ -117,6 +133,7 @@ export const users = pgTable('users', {
   name: varchar('name', { length: 100 }),
   profileImage: text('profile_image'),
   role: userRoleEnum('role').default('USER').notNull(),
+  departmentId: integer('department_id'),
   isActive: boolean('is_active').default(true).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),

@@ -3,10 +3,14 @@ import {
   Get,
   Delete,
   Post,
+  Patch,
+  Param,
+  Body,
   UseGuards,
   Request,
   UseInterceptors,
   UploadedFile,
+  ParseIntPipe,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { UsersService } from './users.service';
@@ -67,5 +71,16 @@ export class UsersController {
       imageUrl,
     );
     return user;
+  }
+
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Update user department' })
+  @UseGuards(JwtAuthGuard)
+  @Patch(':id/department')
+  async updateDepartment(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body: { departmentId: number | null },
+  ) {
+    return this.usersService.updateDepartment(id, body.departmentId);
   }
 }
