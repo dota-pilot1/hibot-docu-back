@@ -12,7 +12,6 @@ import {
   UseInterceptors,
   UploadedFile,
   Res,
-  StreamableFile,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import {
@@ -39,16 +38,16 @@ export class ProjectsController {
   constructor(private readonly projectsService: ProjectsService) {}
 
   @Get('tree')
-  @ApiOperation({ summary: 'Get full project tree' })
-  getTree(@Request() req: any) {
-    return this.projectsService.getTree(req.user.userId);
+  @ApiOperation({ summary: 'Get full project tree (shared)' })
+  getTree() {
+    return this.projectsService.getTree();
   }
 
   @Get('categories')
-  @ApiOperation({ summary: 'Get categories by type' })
+  @ApiOperation({ summary: 'Get categories by type (shared)' })
   @ApiQuery({ name: 'type', enum: ProjectType })
-  getCategoriesByType(@Request() req: any, @Query('type') type: ProjectType) {
-    return this.projectsService.getCategoriesByType(req.user.userId, type);
+  getCategoriesByType(@Query('type') type: ProjectType) {
+    return this.projectsService.getCategoriesByType(type);
   }
 
   @Post('categories')
@@ -60,11 +59,9 @@ export class ProjectsController {
   @Patch('categories/reorder')
   @ApiOperation({ summary: 'Reorder categories' })
   async reorderCategories(
-    @Request() req: any,
     @Body() body: { categoryIds: number[]; parentId: number | null },
   ) {
     await this.projectsService.reorderCategories(
-      req.user.userId,
       body.categoryIds,
       body.parentId,
     );
@@ -73,25 +70,21 @@ export class ProjectsController {
 
   @Patch('categories/:id')
   @ApiOperation({ summary: 'Update a category' })
-  updateCategory(
-    @Request() req: any,
-    @Param('id') id: string,
-    @Body() dto: UpdateCategoryDto,
-  ) {
-    return this.projectsService.updateCategory(req.user.userId, +id, dto);
+  updateCategory(@Param('id') id: string, @Body() dto: UpdateCategoryDto) {
+    return this.projectsService.updateCategory(+id, dto);
   }
 
   @Delete('categories/:id')
   @ApiOperation({ summary: 'Delete a category' })
-  async deleteCategory(@Request() req: any, @Param('id') id: string) {
-    await this.projectsService.deleteCategory(req.user.userId, +id);
+  async deleteCategory(@Param('id') id: string) {
+    await this.projectsService.deleteCategory(+id);
     return { message: 'Category deleted successfully' };
   }
 
   @Get('contents/:categoryId')
-  @ApiOperation({ summary: 'Get contents by category' })
-  getContents(@Request() req: any, @Param('categoryId') categoryId: string) {
-    return this.projectsService.getContents(req.user.userId, +categoryId);
+  @ApiOperation({ summary: 'Get contents by category (shared)' })
+  getContents(@Param('categoryId') categoryId: string) {
+    return this.projectsService.getContents(+categoryId);
   }
 
   @Post('contents')
@@ -103,11 +96,9 @@ export class ProjectsController {
   @Patch('contents/reorder')
   @ApiOperation({ summary: 'Reorder contents' })
   async reorderContents(
-    @Request() req: any,
     @Body() body: { categoryId: number; contentIds: number[] },
   ) {
     await this.projectsService.reorderContents(
-      req.user.userId,
       body.categoryId,
       body.contentIds,
     );
@@ -116,26 +107,22 @@ export class ProjectsController {
 
   @Patch('contents/:id')
   @ApiOperation({ summary: 'Update a content' })
-  updateContent(
-    @Request() req: any,
-    @Param('id') id: string,
-    @Body() dto: UpdateContentDto,
-  ) {
-    return this.projectsService.updateContent(req.user.userId, +id, dto);
+  updateContent(@Param('id') id: string, @Body() dto: UpdateContentDto) {
+    return this.projectsService.updateContent(+id, dto);
   }
 
   @Delete('contents/:id')
   @ApiOperation({ summary: 'Delete a content' })
-  async deleteContent(@Request() req: any, @Param('id') id: string) {
-    await this.projectsService.deleteContent(req.user.userId, +id);
+  async deleteContent(@Param('id') id: string) {
+    await this.projectsService.deleteContent(+id);
     return { message: 'Content deleted successfully' };
   }
 
   // File endpoints
   @Get('categories/:categoryId/files')
-  @ApiOperation({ summary: 'Get files by category' })
-  getFiles(@Request() req: any, @Param('categoryId') categoryId: string) {
-    return this.projectsService.getFiles(req.user.userId, +categoryId);
+  @ApiOperation({ summary: 'Get files by category (shared)' })
+  getFiles(@Param('categoryId') categoryId: string) {
+    return this.projectsService.getFiles(+categoryId);
   }
 
   @Post('categories/:categoryId/files')
@@ -152,29 +139,24 @@ export class ProjectsController {
 
   @Delete('files/:id')
   @ApiOperation({ summary: 'Delete a file' })
-  async deleteFile(@Request() req: any, @Param('id') id: string) {
-    await this.projectsService.deleteFile(req.user.userId, +id);
+  async deleteFile(@Param('id') id: string) {
+    await this.projectsService.deleteFile(+id);
     return { message: 'File deleted successfully' };
   }
 
   @Patch('files/:id/rename')
   @ApiOperation({ summary: 'Rename a file' })
-  renameFile(
-    @Request() req: any,
-    @Param('id') id: string,
-    @Body() body: { newName: string },
-  ) {
-    return this.projectsService.renameFile(req.user.userId, +id, body.newName);
+  renameFile(@Param('id') id: string, @Body() body: { newName: string }) {
+    return this.projectsService.renameFile(+id, body.newName);
   }
 
   @Get('files/:id/download')
   @ApiOperation({ summary: 'Download a file' })
   async downloadFile(
-    @Request() req: any,
     @Param('id') id: string,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const file = await this.projectsService.getFileById(req.user.userId, +id);
+    const file = await this.projectsService.getFileById(+id);
     if (!file) {
       return { message: 'File not found' };
     }
@@ -184,7 +166,6 @@ export class ProjectsController {
       'Content-Disposition': `attachment; filename="${encodeURIComponent(file.originalName)}"`,
     });
 
-    // For now, return file info. In production, stream from S3.
     return file;
   }
 }

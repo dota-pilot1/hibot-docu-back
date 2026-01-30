@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { eq, and, isNull } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import { db } from '../db/client';
 import {
   projectCategories,
@@ -21,19 +21,15 @@ import { v4 as uuidv4 } from 'uuid';
 @Injectable()
 export class ProjectsService {
   constructor(private readonly s3Service: S3Service) {}
-  // Category operations
-  async getTree(userId: number): Promise<any[]> {
-    console.log('[ProjectsService] getTree called with userId:', userId);
+
+  // Category operations - 전체 공유 (userId 필터링 제거)
+  async getTree(): Promise<any[]> {
+    console.log('[ProjectsService] getTree called (shared)');
 
     const categories = await db
       .select()
       .from(projectCategories)
-      .where(
-        and(
-          eq(projectCategories.userId, userId),
-          eq(projectCategories.isActive, true),
-        ),
-      )
+      .where(eq(projectCategories.isActive, true))
       .orderBy(projectCategories.displayOrder);
 
     console.log('[ProjectsService] Found categories:', categories.length);
@@ -44,13 +40,12 @@ export class ProjectsService {
     return tree;
   }
 
-  async getCategoriesByType(userId: number, type: string): Promise<any[]> {
+  async getCategoriesByType(type: string): Promise<any[]> {
     const categories = await db
       .select()
       .from(projectCategories)
       .where(
         and(
-          eq(projectCategories.userId, userId),
           eq(projectCategories.projectType, type as any),
           eq(projectCategories.isActive, true),
         ),
@@ -78,7 +73,7 @@ export class ProjectsService {
     const [category] = await db
       .insert(projectCategories)
       .values({
-        userId,
+        userId, // 생성자 정보는 저장
         name: dto.name,
         projectType: dto.projectType as any,
         techType: dto.techType,
@@ -93,16 +88,13 @@ export class ProjectsService {
   }
 
   async updateCategory(
-    userId: number,
     id: number,
     dto: UpdateCategoryDto,
   ): Promise<ProjectCategory> {
     const existing = await db
       .select()
       .from(projectCategories)
-      .where(
-        and(eq(projectCategories.id, id), eq(projectCategories.userId, userId)),
-      )
+      .where(eq(projectCategories.id, id))
       .limit(1);
 
     if (!existing[0]) {
@@ -122,13 +114,11 @@ export class ProjectsService {
     return updated;
   }
 
-  async deleteCategory(userId: number, id: number): Promise<void> {
+  async deleteCategory(id: number): Promise<void> {
     const existing = await db
       .select()
       .from(projectCategories)
-      .where(
-        and(eq(projectCategories.id, id), eq(projectCategories.userId, userId)),
-      )
+      .where(eq(projectCategories.id, id))
       .limit(1);
 
     if (!existing[0]) {
@@ -145,29 +135,20 @@ export class ProjectsService {
     const children = await db
       .select()
       .from(projectCategories)
-      .where(
-        and(
-          eq(projectCategories.parentId, id),
-          eq(projectCategories.userId, userId),
-        ),
-      );
+      .where(eq(projectCategories.parentId, id));
 
     for (const child of children) {
-      await this.deleteCategory(userId, child.id);
+      await this.deleteCategory(child.id);
     }
   }
 
-  // Content operations
-  async getContents(
-    userId: number,
-    categoryId: number,
-  ): Promise<ProjectContent[]> {
+  // Content operations - 전체 공유
+  async getContents(categoryId: number): Promise<ProjectContent[]> {
     return db
       .select()
       .from(projectContents)
       .where(
         and(
-          eq(projectContents.userId, userId),
           eq(projectContents.categoryId, categoryId),
           eq(projectContents.isActive, true),
         ),
@@ -182,7 +163,7 @@ export class ProjectsService {
     const [content] = await db
       .insert(projectContents)
       .values({
-        userId,
+        userId, // 생성자 정보는 저장
         categoryId: dto.categoryId,
         title: dto.title,
         content: dto.content,
@@ -195,16 +176,13 @@ export class ProjectsService {
   }
 
   async updateContent(
-    userId: number,
     id: number,
     dto: UpdateContentDto,
   ): Promise<ProjectContent> {
     const existing = await db
       .select()
       .from(projectContents)
-      .where(
-        and(eq(projectContents.id, id), eq(projectContents.userId, userId)),
-      )
+      .where(eq(projectContents.id, id))
       .limit(1);
 
     if (!existing[0]) {
@@ -224,13 +202,11 @@ export class ProjectsService {
     return updated;
   }
 
-  async deleteContent(userId: number, id: number): Promise<void> {
+  async deleteContent(id: number): Promise<void> {
     const existing = await db
       .select()
       .from(projectContents)
-      .where(
-        and(eq(projectContents.id, id), eq(projectContents.userId, userId)),
-      )
+      .where(eq(projectContents.id, id))
       .limit(1);
 
     if (!existing[0]) {
@@ -244,43 +220,33 @@ export class ProjectsService {
   }
 
   async reorderCategories(
-    userId: number,
     categoryIds: number[],
     parentId: number | null = null,
   ): Promise<void> {
     console.log('[ProjectsService] reorderCategories', {
-      userId,
       categoryIds,
       parentId,
     });
 
-    // Use a transaction to update all display orders
     await db.transaction(async (tx) => {
       for (let i = 0; i < categoryIds.length; i++) {
         await tx
           .update(projectCategories)
           .set({
             displayOrder: i,
-            parentId: parentId, // Update parent if it changed during drag
+            parentId: parentId,
             updatedAt: new Date(),
           })
-          .where(
-            and(
-              eq(projectCategories.id, categoryIds[i]),
-              eq(projectCategories.userId, userId),
-            ),
-          );
+          .where(eq(projectCategories.id, categoryIds[i]));
       }
     });
   }
 
   async reorderContents(
-    userId: number,
     categoryId: number,
     contentIds: number[],
   ): Promise<void> {
     console.log('[ProjectsService] reorderContents', {
-      userId,
       categoryId,
       contentIds,
     });
@@ -291,15 +257,10 @@ export class ProjectsService {
           .update(projectContents)
           .set({
             displayOrder: i,
-            categoryId: categoryId, // Ensure it's in the right category
+            categoryId: categoryId,
             updatedAt: new Date(),
           })
-          .where(
-            and(
-              eq(projectContents.id, contentIds[i]),
-              eq(projectContents.userId, userId),
-            ),
-          );
+          .where(eq(projectContents.id, contentIds[i]));
       }
     });
   }
@@ -325,20 +286,12 @@ export class ProjectsService {
     return roots;
   }
 
-  // File operations
-  async getFiles(
-    userId: number,
-    categoryId: number,
-  ): Promise<ProjectCategoryFile[]> {
+  // File operations - 전체 공유
+  async getFiles(categoryId: number): Promise<ProjectCategoryFile[]> {
     return db
       .select()
       .from(projectCategoryFiles)
-      .where(
-        and(
-          eq(projectCategoryFiles.userId, userId),
-          eq(projectCategoryFiles.categoryId, categoryId),
-        ),
-      )
+      .where(eq(projectCategoryFiles.categoryId, categoryId))
       .orderBy(projectCategoryFiles.displayOrder);
   }
 
@@ -347,16 +300,14 @@ export class ProjectsService {
     categoryId: number,
     file: Express.Multer.File,
   ): Promise<ProjectCategoryFile> {
-    // Decode filename for UTF-8 support (handles Korean, etc.)
     const originalName = Buffer.from(file.originalname, 'latin1').toString(
       'utf8',
     );
     const extension = this.getFileExtension(originalName);
     const storedName = `${uuidv4()}${extension}`;
-    const folder = `project-files/${userId}/${categoryId}`;
+    const folder = `project-files/${categoryId}`;
     const filePath = `${folder}/${storedName}`;
 
-    // Upload to S3
     const s3Url = await this.s3Service.uploadFile(file, folder, storedName);
 
     const fileType = this.determineFileType(extension, file.mimetype);
@@ -365,7 +316,7 @@ export class ProjectsService {
       .insert(projectCategoryFiles)
       .values({
         categoryId,
-        userId,
+        userId, // 생성자 정보는 저장
         originalName,
         storedName,
         s3Url,
@@ -379,23 +330,17 @@ export class ProjectsService {
     return saved;
   }
 
-  async deleteFile(userId: number, fileId: number): Promise<void> {
+  async deleteFile(fileId: number): Promise<void> {
     const existing = await db
       .select()
       .from(projectCategoryFiles)
-      .where(
-        and(
-          eq(projectCategoryFiles.id, fileId),
-          eq(projectCategoryFiles.userId, userId),
-        ),
-      )
+      .where(eq(projectCategoryFiles.id, fileId))
       .limit(1);
 
     if (!existing[0]) {
       throw new NotFoundException('File not found');
     }
 
-    // Delete from S3
     try {
       await this.s3Service.deleteFile(existing[0].s3Url);
     } catch (error) {
@@ -408,19 +353,13 @@ export class ProjectsService {
   }
 
   async renameFile(
-    userId: number,
     fileId: number,
     newName: string,
   ): Promise<ProjectCategoryFile> {
     const existing = await db
       .select()
       .from(projectCategoryFiles)
-      .where(
-        and(
-          eq(projectCategoryFiles.id, fileId),
-          eq(projectCategoryFiles.userId, userId),
-        ),
-      )
+      .where(eq(projectCategoryFiles.id, fileId))
       .limit(1);
 
     if (!existing[0]) {
@@ -439,19 +378,11 @@ export class ProjectsService {
     return updated;
   }
 
-  async getFileById(
-    userId: number,
-    fileId: number,
-  ): Promise<ProjectCategoryFile | null> {
+  async getFileById(fileId: number): Promise<ProjectCategoryFile | null> {
     const [file] = await db
       .select()
       .from(projectCategoryFiles)
-      .where(
-        and(
-          eq(projectCategoryFiles.id, fileId),
-          eq(projectCategoryFiles.userId, userId),
-        ),
-      )
+      .where(eq(projectCategoryFiles.id, fileId))
       .limit(1);
 
     return file || null;
