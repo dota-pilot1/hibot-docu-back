@@ -11,6 +11,7 @@ import {
   UseInterceptors,
   UploadedFile,
   ParseIntPipe,
+  ForbiddenException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { UsersService } from './users.service';
@@ -47,6 +48,26 @@ export class UsersController {
   async deleteMe(@Request() req: any) {
     await this.usersService.delete(req.user.userId);
     return { success: true };
+  }
+
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Delete user by ID (Admin only)' })
+  @UseGuards(JwtAuthGuard)
+  @Delete(':id')
+  async deleteUser(@Param('id', ParseIntPipe) id: number, @Request() req: any) {
+    // Check if user is admin
+    const currentUser = await this.usersService.findOne(req.user.userId);
+    if (currentUser.role !== 'ADMIN') {
+      throw new ForbiddenException('Only admins can delete users');
+    }
+
+    // Prevent deleting own account via this endpoint
+    if (id === req.user.userId) {
+      throw new ForbiddenException('Cannot delete your own account');
+    }
+
+    await this.usersService.delete(id);
+    return { success: true, message: 'User deleted successfully' };
   }
 
   @ApiBearerAuth()
