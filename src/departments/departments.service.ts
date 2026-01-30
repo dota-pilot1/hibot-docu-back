@@ -192,4 +192,18 @@ export class DepartmentsService {
       .set({ departmentId: null, updatedAt: new Date() })
       .where(eq(users.departmentId, id));
   }
+
+  async reorder(
+    departmentIds: number[],
+    parentId: number | null,
+  ): Promise<void> {
+    await Promise.all(
+      departmentIds.map((deptId, index) =>
+        db
+          .update(departments)
+          .set({ displayOrder: index, updatedAt: new Date() })
+          .where(eq(departments.id, deptId)),
+      ),
+    );
+  }
 }

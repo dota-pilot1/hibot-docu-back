@@ -58,6 +58,14 @@ export class DepartmentsController {
     return this.departmentsService.findOne(id);
   }
 
+  @Patch('reorder')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: '부서 순서 변경' })
+  reorder(@Body() body: { departmentIds: number[]; parentId: number | null }) {
+    return this.departmentsService.reorder(body.departmentIds, body.parentId);
+  }
+
   @Patch(':id')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
