@@ -142,4 +142,23 @@ export class UsersController {
   ) {
     return this.usersService.updateDepartment(id, body.departmentId);
   }
+
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Reorder users within a department' })
+  @UseGuards(JwtAuthGuard)
+  @Patch('reorder')
+  async reorderUsers(
+    @Body() body: { userIds: number[]; departmentId: number | null },
+    @Request() req: any,
+  ) {
+    // Check if user is admin
+    const currentUser = await this.usersService.findById(req.user.userId);
+
+    if (!currentUser || currentUser.role !== 'ADMIN') {
+      throw new ForbiddenException('Only admins can reorder users');
+    }
+
+    await this.usersService.reorderUsers(body.userIds, body.departmentId);
+    return { success: true };
+  }
 }

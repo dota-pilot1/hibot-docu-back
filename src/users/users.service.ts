@@ -1,5 +1,5 @@
 import { Injectable, ConflictException } from '@nestjs/common';
-import { eq } from 'drizzle-orm';
+import { eq, inArray } from 'drizzle-orm';
 import * as bcrypt from 'bcrypt';
 import { db } from '../db/client';
 import { users, User, NewUser } from '../db/schema';
@@ -104,5 +104,20 @@ export class UsersService {
 
     const { password, ...result } = updated;
     return result;
+  }
+
+  async reorderUsers(
+    userIds: number[],
+    departmentId: number | null,
+  ): Promise<void> {
+    // 각 사용자의 displayOrder를 순서대로 업데이트
+    await Promise.all(
+      userIds.map((userId, index) =>
+        db
+          .update(users)
+          .set({ displayOrder: index, updatedAt: new Date() })
+          .where(eq(users.id, userId)),
+      ),
+    );
   }
 }

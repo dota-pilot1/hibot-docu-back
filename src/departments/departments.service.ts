@@ -73,7 +73,7 @@ export class DepartmentsService {
       .where(eq(departments.isActive, true))
       .orderBy(asc(departments.displayOrder), asc(departments.name));
 
-    // 모든 사용자 조회
+    // 모든 사용자 조회 (displayOrder로 정렬)
     const allUsers = await db
       .select({
         id: users.id,
@@ -82,9 +82,11 @@ export class DepartmentsService {
         profileImage: users.profileImage,
         role: users.role,
         departmentId: users.departmentId,
+        displayOrder: users.displayOrder,
       })
       .from(users)
-      .where(eq(users.isActive, true));
+      .where(eq(users.isActive, true))
+      .orderBy(asc(users.displayOrder));
 
     // 부서별 사용자 매핑
     const usersByDepartment = new Map<number, typeof allUsers>();
@@ -108,14 +110,16 @@ export class DepartmentsService {
           ...dept,
           children: buildTree(dept.id),
           users: (usersByDepartment.get(dept.id) || []).map(
-            ({ departmentId, ...user }) => user,
+            ({ departmentId, displayOrder, ...user }) => user,
           ),
         }));
     };
 
     return {
       departments: buildTree(null),
-      unassignedUsers: unassignedUsers.map(({ departmentId, ...user }) => user),
+      unassignedUsers: unassignedUsers.map(
+        ({ departmentId, displayOrder, ...user }) => user,
+      ),
     };
   }
 
