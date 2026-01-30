@@ -9,6 +9,7 @@ import { CommonModule } from './common/common.module';
 import { AiModule } from './ai/ai.module';
 import { PostsModule } from './posts/posts.module';
 import { DepartmentsModule } from './departments/departments.module';
+import { NotesModule } from './notes/notes.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { DepartmentsModule } from './departments/departments.module';
     AiModule,
     PostsModule,
     DepartmentsModule,
+    NotesModule,
   ],
   controllers: [AppController],
   providers: [AppService],
