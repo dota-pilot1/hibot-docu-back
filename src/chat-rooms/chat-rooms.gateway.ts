@@ -115,8 +115,7 @@ export class ChatRoomsGateway
     const roomName = `room_${data.roomId}`;
     this.server.to(roomName).emit('newMessage', message);
 
-    // acknowledgement 응답
-    return message;
+    // acknowledgement 응답하지 않음 - 브로드캐스트로 이미 전달됨
   }
 
   // 외부에서 메시지 브로드캐스트 (예: AI 응답)
