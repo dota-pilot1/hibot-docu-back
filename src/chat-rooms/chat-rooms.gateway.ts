@@ -41,9 +41,10 @@ export class ChatRoomsGateway
 
   // 사용자 소켓 매핑 (userId -> socketId)
   private userSockets: Map<number, string> = new Map();
-  // 소켓별 참여 중인 방 (socketId -> { roomId, userId })
-  private socketRooms: Map<string, { roomId: number; userId: number }> =
-    new Map();
+  // 소켓별 참여 중인 방들 (socketId -> Set<roomId>)
+  private socketRooms: Map<string, Set<number>> = new Map();
+  // 소켓의 userId (socketId -> userId)
+  private socketUsers: Map<string, number> = new Map();
 
   constructor(private readonly chatRoomsService: ChatRoomsService) {}
 
@@ -54,20 +55,27 @@ export class ChatRoomsGateway
   async handleDisconnect(client: Socket) {
     console.log(`Client disconnected: ${client.id}`);
 
-    // 해당 소켓이 참여 중인 방에서 참여자 제거
-    const roomInfo = this.socketRooms.get(client.id);
-    if (roomInfo) {
-      await this.chatRoomsService.removeParticipant(
-        roomInfo.roomId,
-        roomInfo.userId,
-      );
-      this.socketRooms.delete(client.id);
+    // 해당 소켓이 참여 중인 모든 방에서 참여자 제거
+    const roomIds = this.socketRooms.get(client.id);
+    const userId = this.socketUsers.get(client.id);
+
+    if (roomIds && userId) {
+      for (const roomId of roomIds) {
+        await this.chatRoomsService.removeParticipant(roomId, userId);
+
+        // 참여자 목록 변경 알림
+        const roomName = `room_${roomId}`;
+        this.server.to(roomName).emit('participantsChanged', { roomId });
+      }
     }
 
+    this.socketRooms.delete(client.id);
+    this.socketUsers.delete(client.id);
+
     // userSockets에서 해당 소켓 제거
-    for (const [userId, socketId] of this.userSockets.entries()) {
+    for (const [uId, socketId] of this.userSockets.entries()) {
       if (socketId === client.id) {
-        this.userSockets.delete(userId);
+        this.userSockets.delete(uId);
         break;
       }
     }
@@ -88,16 +96,27 @@ export class ChatRoomsGateway
     @ConnectedSocket() client: Socket,
   ) {
     const roomName = `room_${data.roomId}`;
+    console.log(
+      `joinRoom: socket=${client.id}, room=${data.roomId}, userId=${data.userId}`,
+    );
+
     client.join(roomName);
 
     // DB에 참여자로 등록 (이미 참여중이면 무시됨)
     if (data.userId) {
       await this.chatRoomsService.addParticipant(data.roomId, data.userId);
+
       // 소켓-방 매핑 저장 (disconnect 시 참여자 제거용)
-      this.socketRooms.set(client.id, {
-        roomId: data.roomId,
-        userId: data.userId,
-      });
+      if (!this.socketRooms.has(client.id)) {
+        this.socketRooms.set(client.id, new Set());
+      }
+      this.socketRooms.get(client.id)!.add(data.roomId);
+      this.socketUsers.set(client.id, data.userId);
+
+      // 참여자 목록 변경 알림 (해당 방의 모든 클라이언트에게)
+      this.server
+        .to(roomName)
+        .emit('participantsChanged', { roomId: data.roomId });
     }
 
     return { event: 'joinedRoom', data: { roomId: data.roomId } };
@@ -109,13 +128,27 @@ export class ChatRoomsGateway
     @ConnectedSocket() client: Socket,
   ) {
     const roomName = `room_${data.roomId}`;
-    client.leave(roomName);
+    console.log(
+      `leaveRoom: socket=${client.id}, room=${data.roomId}, userId=${data.userId}`,
+    );
 
     // DB에서 참여자 제거 (비활성화)
     if (data.userId) {
       await this.chatRoomsService.removeParticipant(data.roomId, data.userId);
-      this.socketRooms.delete(client.id);
+
+      // 소켓-방 매핑에서 해당 방만 제거
+      const rooms = this.socketRooms.get(client.id);
+      if (rooms) {
+        rooms.delete(data.roomId);
+      }
+
+      // 참여자 목록 변경 알림 (해당 방의 모든 클라이언트에게)
+      this.server
+        .to(roomName)
+        .emit('participantsChanged', { roomId: data.roomId });
     }
+
+    client.leave(roomName);
 
     return { event: 'leftRoom', data: { roomId: data.roomId } };
   }
@@ -138,6 +171,23 @@ export class ChatRoomsGateway
     this.server.to(roomName).emit('newMessage', message);
 
     // acknowledgement 응답하지 않음 - 브로드캐스트로 이미 전달됨
+  }
+
+  @SubscribeMessage('clearMessages')
+  async handleClearMessages(
+    @MessageBody() data: { roomId: number },
+    @ConnectedSocket() client: Socket,
+  ) {
+    const roomName = `room_${data.roomId}`;
+    console.log(`clearMessages: room=${data.roomId}`);
+
+    // DB에서 메시지 삭제
+    await this.chatRoomsService.clearMessages(data.roomId);
+
+    // 모든 클라이언트에게 브로드캐스트
+    this.server.to(roomName).emit('messagesCleared', { roomId: data.roomId });
+
+    return { event: 'messagesCleared', data: { roomId: data.roomId } };
   }
 
   // 외부에서 메시지 브로드캐스트 (예: AI 응답)
