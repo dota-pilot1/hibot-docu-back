@@ -235,3 +235,33 @@ export const documents = pgTable('documents', {
 
 export type Document = typeof documents.$inferSelect;
 export type NewDocument = typeof documents.$inferInsert;
+
+// Chat projects table (채팅 프로젝트 - 폴더 역할)
+export const chatProjects = pgTable('chat_projects', {
+  id: serial('id').primaryKey(),
+  name: varchar('name', { length: 100 }).notNull(),
+  description: text('description'),
+  displayOrder: integer('display_order').default(0).notNull(),
+  isActive: boolean('is_active').default(true).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+export type ChatProject = typeof chatProjects.$inferSelect;
+export type NewChatProject = typeof chatProjects.$inferInsert;
+
+// Chat teams table (채팅 팀 - 채팅방 역할)
+export const chatTeams = pgTable('chat_teams', {
+  id: serial('id').primaryKey(),
+  name: varchar('name', { length: 100 }).notNull(),
+  description: text('description'),
+  projectId: integer('project_id'),
+  createdBy: integer('created_by'),
+  displayOrder: integer('display_order').default(0).notNull(),
+  isActive: boolean('is_active').default(true).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+export type ChatTeam = typeof chatTeams.$inferSelect;
+export type NewChatTeam = typeof chatTeams.$inferInsert;

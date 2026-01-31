@@ -12,6 +12,8 @@ import { DepartmentsModule } from './departments/departments.module';
 import { NotesModule } from './notes/notes.module';
 import { DocumentFoldersModule } from './document-folders/document-folders.module';
 import { DocumentsModule } from './documents/documents.module';
+import { ChatProjectsModule } from './chat-projects/chat-projects.module';
+import { ChatTeamsModule } from './chat-teams/chat-teams.module';
 
 @Module({
   imports: [
@@ -28,6 +30,8 @@ import { DocumentsModule } from './documents/documents.module';
     NotesModule,
     DocumentFoldersModule,
     DocumentsModule,
+    ChatProjectsModule,
+    ChatTeamsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
