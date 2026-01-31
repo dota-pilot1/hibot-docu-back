@@ -104,6 +104,7 @@ export class ChatRoomsService {
   // === Participants ===
 
   async getParticipants(roomId: number) {
+    // innerJoin으로 user가 존재하는 참여자만 반환
     return db
       .select({
         id: chatRoomParticipants.id,
@@ -120,7 +121,7 @@ export class ChatRoomsService {
         },
       })
       .from(chatRoomParticipants)
-      .leftJoin(users, eq(chatRoomParticipants.userId, users.id))
+      .innerJoin(users, eq(chatRoomParticipants.userId, users.id))
       .where(
         and(
           eq(chatRoomParticipants.roomId, roomId),
