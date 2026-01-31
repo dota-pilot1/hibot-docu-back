@@ -41,6 +41,9 @@ export class ChatRoomsGateway
 
   // 사용자 소켓 매핑 (userId -> socketId)
   private userSockets: Map<number, string> = new Map();
+  // 소켓별 참여 중인 방 (socketId -> { roomId, userId })
+  private socketRooms: Map<string, { roomId: number; userId: number }> =
+    new Map();
 
   constructor(private readonly chatRoomsService: ChatRoomsService) {}
 
@@ -48,8 +51,19 @@ export class ChatRoomsGateway
     console.log(`Client connected: ${client.id}`);
   }
 
-  handleDisconnect(client: Socket) {
+  async handleDisconnect(client: Socket) {
     console.log(`Client disconnected: ${client.id}`);
+
+    // 해당 소켓이 참여 중인 방에서 참여자 제거
+    const roomInfo = this.socketRooms.get(client.id);
+    if (roomInfo) {
+      await this.chatRoomsService.removeParticipant(
+        roomInfo.roomId,
+        roomInfo.userId,
+      );
+      this.socketRooms.delete(client.id);
+    }
+
     // userSockets에서 해당 소켓 제거
     for (const [userId, socketId] of this.userSockets.entries()) {
       if (socketId === client.id) {
@@ -79,6 +93,11 @@ export class ChatRoomsGateway
     // DB에 참여자로 등록 (이미 참여중이면 무시됨)
     if (data.userId) {
       await this.chatRoomsService.addParticipant(data.roomId, data.userId);
+      // 소켓-방 매핑 저장 (disconnect 시 참여자 제거용)
+      this.socketRooms.set(client.id, {
+        roomId: data.roomId,
+        userId: data.userId,
+      });
     }
 
     return { event: 'joinedRoom', data: { roomId: data.roomId } };
@@ -91,6 +110,12 @@ export class ChatRoomsGateway
   ) {
     const roomName = `room_${data.roomId}`;
     client.leave(roomName);
+
+    // DB에서 참여자 제거 (비활성화)
+    if (data.userId) {
+      await this.chatRoomsService.removeParticipant(data.roomId, data.userId);
+      this.socketRooms.delete(client.id);
+    }
 
     return { event: 'leftRoom', data: { roomId: data.roomId } };
   }
