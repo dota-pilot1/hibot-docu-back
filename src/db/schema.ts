@@ -298,14 +298,21 @@ export type ChatRoom = typeof chatRooms.$inferSelect;
 export type NewChatRoom = typeof chatRooms.$inferInsert;
 
 // Chat room participants table (채팅방 참여자)
-export const chatRoomParticipants = pgTable('chat_room_participants', {
-  id: serial('id').primaryKey(),
-  roomId: integer('room_id').notNull(),
-  userId: integer('user_id').notNull(),
-  joinedAt: timestamp('joined_at').defaultNow().notNull(),
-  lastReadAt: timestamp('last_read_at'),
-  isActive: boolean('is_active').default(true).notNull(),
-});
+export const chatRoomParticipants = pgTable(
+  'chat_room_participants',
+  {
+    id: serial('id').primaryKey(),
+    roomId: integer('room_id').notNull(),
+    userId: integer('user_id').notNull(),
+    joinedAt: timestamp('joined_at').defaultNow().notNull(),
+    lastReadAt: timestamp('last_read_at'),
+    isActive: boolean('is_active').default(true).notNull(),
+  },
+  (table) => ({
+    // roomId + userId unique constraint로 중복 참여 방지
+    uniqueRoomUser: { columns: [table.roomId, table.userId], unique: true },
+  }),
+);
 
 export type ChatRoomParticipant = typeof chatRoomParticipants.$inferSelect;
 export type NewChatRoomParticipant = typeof chatRoomParticipants.$inferInsert;

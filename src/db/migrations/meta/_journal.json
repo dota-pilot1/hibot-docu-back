@@ -36,6 +36,13 @@
       "when": 1769855551180,
       "tag": "0004_dizzy_ogun",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1769870622508,
+      "tag": "0005_high_black_widow",
+      "breakpoints": true
     }
   ]
 }

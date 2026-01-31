@@ -131,8 +131,8 @@ export class ChatRoomsService {
   }
 
   async addParticipant(roomId: number, userId: number) {
-    // 이미 참여 중인지 확인
-    const [existing] = await db
+    // 이미 참여 중인지 확인 (활성/비활성 모두)
+    const existingList = await db
       .select()
       .from(chatRoomParticipants)
       .where(
@@ -142,7 +142,9 @@ export class ChatRoomsService {
         ),
       );
 
-    if (existing) {
+    // 이미 존재하면
+    if (existingList.length > 0) {
+      const existing = existingList[0];
       // 비활성화된 참여자면 다시 활성화
       if (!existing.isActive) {
         const [updated] = await db
@@ -155,15 +157,30 @@ export class ChatRoomsService {
       return existing;
     }
 
-    const [participant] = await db
-      .insert(chatRoomParticipants)
-      .values({
-        roomId,
-        userId,
-      })
-      .returning();
+    // 새로 추가 (onConflictDoNothing으로 race condition 방지)
+    try {
+      const [participant] = await db
+        .insert(chatRoomParticipants)
+        .values({
+          roomId,
+          userId,
+        })
+        .returning();
 
-    return participant;
+      return participant;
+    } catch (error) {
+      // 중복 에러 시 기존 데이터 반환
+      const [existing] = await db
+        .select()
+        .from(chatRoomParticipants)
+        .where(
+          and(
+            eq(chatRoomParticipants.roomId, roomId),
+            eq(chatRoomParticipants.userId, userId),
+          ),
+        );
+      return existing;
+    }
   }
 
   async removeParticipant(roomId: number, userId: number) {
