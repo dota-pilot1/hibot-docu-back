@@ -206,3 +206,32 @@ export const users = pgTable('users', {
 
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
+
+// Document folders table (문서 폴더)
+export const documentFolders = pgTable('document_folders', {
+  id: serial('id').primaryKey(),
+  name: varchar('name', { length: 100 }).notNull(),
+  displayOrder: integer('display_order').default(0).notNull(),
+  isActive: boolean('is_active').default(true).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+export type DocumentFolder = typeof documentFolders.$inferSelect;
+export type NewDocumentFolder = typeof documentFolders.$inferInsert;
+
+// Documents table (문서)
+export const documents = pgTable('documents', {
+  id: serial('id').primaryKey(),
+  title: varchar('title', { length: 200 }).notNull(),
+  content: text('content').default(''),
+  folderId: integer('folder_id'),
+  createdBy: integer('created_by'),
+  updatedBy: integer('updated_by'),
+  isActive: boolean('is_active').default(true).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+export type Document = typeof documents.$inferSelect;
+export type NewDocument = typeof documents.$inferInsert;

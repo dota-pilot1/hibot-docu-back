@@ -10,6 +10,8 @@ import { AiModule } from './ai/ai.module';
 import { PostsModule } from './posts/posts.module';
 import { DepartmentsModule } from './departments/departments.module';
 import { NotesModule } from './notes/notes.module';
+import { DocumentFoldersModule } from './document-folders/document-folders.module';
+import { DocumentsModule } from './documents/documents.module';
 
 @Module({
   imports: [
@@ -24,6 +26,8 @@ import { NotesModule } from './notes/notes.module';
     PostsModule,
     DepartmentsModule,
     NotesModule,
+    DocumentFoldersModule,
+    DocumentsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
