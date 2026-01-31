@@ -76,13 +76,10 @@ export class ChatRoomsGateway
     const roomName = `room_${data.roomId}`;
     client.join(roomName);
 
-    // 입장 시스템 메시지 생성 (선택적)
-    // await this.chatRoomsService.createMessage({
-    //   roomId: data.roomId,
-    //   userId: data.userId,
-    //   content: '님이 입장했습니다.',
-    //   messageType: 'SYSTEM',
-    // });
+    // DB에 참여자로 등록 (이미 참여중이면 무시됨)
+    if (data.userId) {
+      await this.chatRoomsService.addParticipant(data.roomId, data.userId);
+    }
 
     return { event: 'joinedRoom', data: { roomId: data.roomId } };
   }
