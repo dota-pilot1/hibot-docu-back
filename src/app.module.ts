@@ -14,6 +14,7 @@ import { DocumentFoldersModule } from './document-folders/document-folders.modul
 import { DocumentsModule } from './documents/documents.module';
 import { ChatProjectsModule } from './chat-projects/chat-projects.module';
 import { ChatTeamsModule } from './chat-teams/chat-teams.module';
+import { ChatRoomsModule } from './chat-rooms/chat-rooms.module';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { ChatTeamsModule } from './chat-teams/chat-teams.module';
     DocumentsModule,
     ChatProjectsModule,
     ChatTeamsModule,
+    ChatRoomsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

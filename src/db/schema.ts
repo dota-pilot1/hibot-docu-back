@@ -265,3 +265,60 @@ export const chatTeams = pgTable('chat_teams', {
 
 export type ChatTeam = typeof chatTeams.$inferSelect;
 export type NewChatTeam = typeof chatTeams.$inferInsert;
+
+// Chat room type enum
+export const chatRoomTypeEnum = pgEnum('chat_room_type', [
+  'GENERAL',
+  'AI_ENABLED',
+]);
+
+// Chat message type enum
+export const chatMessageTypeEnum = pgEnum('chat_message_type', [
+  'CHAT',
+  'SYSTEM',
+  'AI',
+]);
+
+// Chat rooms table (채팅방)
+export const chatRooms = pgTable('chat_rooms', {
+  id: serial('id').primaryKey(),
+  teamId: integer('team_id').notNull(),
+  name: varchar('name', { length: 100 }).notNull(),
+  description: text('description'),
+  roomType: chatRoomTypeEnum('room_type').default('GENERAL').notNull(),
+  maxParticipants: integer('max_participants').default(50).notNull(),
+  createdBy: integer('created_by'),
+  displayOrder: integer('display_order').default(0).notNull(),
+  isActive: boolean('is_active').default(true).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+export type ChatRoom = typeof chatRooms.$inferSelect;
+export type NewChatRoom = typeof chatRooms.$inferInsert;
+
+// Chat room participants table (채팅방 참여자)
+export const chatRoomParticipants = pgTable('chat_room_participants', {
+  id: serial('id').primaryKey(),
+  roomId: integer('room_id').notNull(),
+  userId: integer('user_id').notNull(),
+  joinedAt: timestamp('joined_at').defaultNow().notNull(),
+  lastReadAt: timestamp('last_read_at'),
+  isActive: boolean('is_active').default(true).notNull(),
+});
+
+export type ChatRoomParticipant = typeof chatRoomParticipants.$inferSelect;
+export type NewChatRoomParticipant = typeof chatRoomParticipants.$inferInsert;
+
+// Chat messages table (채팅 메시지)
+export const chatMessages = pgTable('chat_messages', {
+  id: serial('id').primaryKey(),
+  roomId: integer('room_id').notNull(),
+  userId: integer('user_id').notNull(),
+  messageType: chatMessageTypeEnum('message_type').default('CHAT').notNull(),
+  content: text('content').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+export type ChatMessage = typeof chatMessages.$inferSelect;
+export type NewChatMessage = typeof chatMessages.$inferInsert;
