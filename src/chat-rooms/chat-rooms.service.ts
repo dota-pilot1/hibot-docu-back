@@ -230,14 +230,18 @@ export class ChatRoomsService {
       .returning();
 
     // 메시지와 함께 사용자 정보도 반환
-    const [user] = await db
-      .select({
-        id: users.id,
-        name: users.name,
-        profileImage: users.profileImage,
-      })
-      .from(users)
-      .where(eq(users.id, dto.userId));
+    let user = null;
+    if (dto.userId) {
+      const [foundUser] = await db
+        .select({
+          id: users.id,
+          name: users.name,
+          profileImage: users.profileImage,
+        })
+        .from(users)
+        .where(eq(users.id, dto.userId));
+      user = foundUser || null;
+    }
 
     return {
       ...message,
