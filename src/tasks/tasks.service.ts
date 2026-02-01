@@ -160,6 +160,45 @@ export class TasksService {
     await db.delete(tasks).where(eq(tasks.id, id));
   }
 
+  // 현재 작업 설정 (한 유저당 하나만)
+  async setCurrentTask(taskId: number, userId: number): Promise<Task> {
+    const task = await this.findOne(taskId);
+
+    // 해당 유저의 다른 모든 Task의 isCurrent를 false로
+    await db
+      .update(tasks)
+      .set({ isCurrent: false })
+      .where(eq(tasks.assigneeId, task.assigneeId));
+
+    // 선택한 Task만 isCurrent를 true로
+    const result = await db
+      .update(tasks)
+      .set({ isCurrent: true, updatedAt: new Date() })
+      .where(eq(tasks.id, taskId))
+      .returning();
+
+    // 활동 로그 기록
+    await this.createActivity(
+      taskId,
+      userId,
+      'updated',
+      `현재 작업으로 설정: ${task.title}`,
+    );
+
+    return result[0];
+  }
+
+  // 현재 작업 조회
+  async getCurrentTask(userId: number): Promise<Task | null> {
+    const result = await db
+      .select()
+      .from(tasks)
+      .where(and(eq(tasks.assigneeId, userId), eq(tasks.isCurrent, true)))
+      .limit(1);
+
+    return result[0] || null;
+  }
+
   // 유저 Task 통계
   async getUserStats(
     userId: number,

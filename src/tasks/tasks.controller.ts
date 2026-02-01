@@ -68,6 +68,16 @@ export class TasksController {
   remove(@Param('id', ParseIntPipe) id: number) {
     return this.tasksService.remove(id);
   }
+
+  @Patch(':id/current')
+  setCurrentTask(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
+    return this.tasksService.setCurrentTask(id, req.user.userId);
+  }
+
+  @Get('user/:userId/current')
+  getCurrentTask(@Param('userId', ParseIntPipe) userId: number) {
+    return this.tasksService.getCurrentTask(userId);
+  }
 }
 
 // User Activities & Memo Controller (users 확장)
