@@ -78,6 +78,20 @@ export class TasksController {
   getCurrentTask(@Param('userId', ParseIntPipe) userId: number) {
     return this.tasksService.getCurrentTask(userId);
   }
+
+  // 부서별 오늘 활동 조회
+  @Get('departments/:departmentId/activities/today')
+  getDepartmentActivitiesToday(
+    @Param('departmentId', ParseIntPipe) departmentId: number,
+  ) {
+    return this.tasksService.getDepartmentActivitiesToday(departmentId);
+  }
+
+  // 부서별 오늘 활동 수 요약
+  @Get('departments/activities/today/summary')
+  getDepartmentActivitySummaryToday() {
+    return this.tasksService.getDepartmentActivitySummaryToday();
+  }
 }
 
 // User Activities & Memo Controller (users 확장)

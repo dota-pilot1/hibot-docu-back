@@ -1,10 +1,12 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { eq, desc, and, sql } from 'drizzle-orm';
+import { eq, desc, and, sql, inArray } from 'drizzle-orm';
 import { db } from '../db/client';
 import {
   tasks,
   taskActivities,
   userMemos,
+  users,
+  departments,
   Task,
   TaskActivity,
   UserMemo,
@@ -250,6 +252,72 @@ export class TasksService {
       .where(eq(taskActivities.userId, userId))
       .orderBy(desc(taskActivities.createdAt))
       .limit(limit);
+  }
+
+  // 부서별 오늘 활동 조회
+  async getDepartmentActivitiesToday(
+    departmentId: number,
+    limit = 50,
+  ): Promise<TaskActivity[]> {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // 해당 부서 유저들의 ID 조회
+    const deptUsers = await db
+      .select({ id: users.id })
+      .from(users)
+      .where(
+        and(eq(users.departmentId, departmentId), eq(users.isActive, true)),
+      );
+
+    if (deptUsers.length === 0) {
+      return [];
+    }
+
+    const userIds = deptUsers.map((u) => u.id);
+
+    return db
+      .select()
+      .from(taskActivities)
+      .where(
+        and(
+          inArray(taskActivities.userId, userIds),
+          sql`${taskActivities.createdAt} >= ${today.toISOString()}::timestamp`,
+        ),
+      )
+      .orderBy(desc(taskActivities.createdAt))
+      .limit(limit);
+  }
+
+  // 부서별 오늘 활동 수 요약
+  async getDepartmentActivitySummaryToday(): Promise<
+    { departmentId: number; departmentName: string; count: number }[]
+  > {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const result = await db
+      .select({
+        departmentId: users.departmentId,
+        departmentName: departments.name,
+        count: sql<number>`count(${taskActivities.id})::int`,
+      })
+      .from(taskActivities)
+      .innerJoin(users, eq(taskActivities.userId, users.id))
+      .innerJoin(departments, eq(users.departmentId, departments.id))
+      .where(
+        and(
+          sql`${taskActivities.createdAt} >= ${today.toISOString()}::timestamp`,
+          eq(departments.isActive, true),
+        ),
+      )
+      .groupBy(users.departmentId, departments.name);
+
+    return result.map((r) => ({
+      departmentId: r.departmentId!,
+      departmentName: r.departmentName,
+      count: r.count,
+    }));
   }
 
   // User Memo (개인 메모)
