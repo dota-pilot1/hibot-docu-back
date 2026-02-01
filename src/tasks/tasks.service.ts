@@ -166,6 +166,7 @@ export class TasksService {
   ): Promise<{ todayTotal: number; todayCompleted: number }> {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
+    const todayStr = today.toISOString();
 
     const result = await db
       .select({
@@ -174,7 +175,10 @@ export class TasksService {
       })
       .from(tasks)
       .where(
-        and(eq(tasks.assigneeId, userId), sql`${tasks.createdAt} >= ${today}`),
+        and(
+          eq(tasks.assigneeId, userId),
+          sql`${tasks.createdAt} >= ${todayStr}::timestamp`,
+        ),
       );
 
     return result[0] || { todayTotal: 0, todayCompleted: 0 };
