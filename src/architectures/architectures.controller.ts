@@ -21,39 +21,39 @@ import {
   ApiQuery,
   ApiConsumes,
 } from '@nestjs/swagger';
-import { ProjectsService } from './projects.service';
+import { ArchitecturesService } from './architectures.service';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
 import { CreateContentDto } from './dto/create-content.dto';
 import { UpdateContentDto } from './dto/update-content.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { ProjectType } from './types/project-type';
+import { ArchitectureType } from './types/architecture-type';
 import type { Response } from 'express';
 
-@ApiTags('projects')
+@ApiTags('architectures')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
-@Controller('projects')
-export class ProjectsController {
-  constructor(private readonly projectsService: ProjectsService) {}
+@Controller('architectures')
+export class ArchitecturesController {
+  constructor(private readonly architecturesService: ArchitecturesService) {}
 
   @Get('tree')
-  @ApiOperation({ summary: 'Get full project tree (shared)' })
+  @ApiOperation({ summary: 'Get full architecture tree (shared)' })
   getTree() {
-    return this.projectsService.getTree();
+    return this.architecturesService.getTree();
   }
 
   @Get('categories')
   @ApiOperation({ summary: 'Get categories by type (shared)' })
-  @ApiQuery({ name: 'type', enum: ProjectType })
-  getCategoriesByType(@Query('type') type: ProjectType) {
-    return this.projectsService.getCategoriesByType(type);
+  @ApiQuery({ name: 'type', enum: ArchitectureType })
+  getCategoriesByType(@Query('type') type: ArchitectureType) {
+    return this.architecturesService.getCategoriesByType(type);
   }
 
   @Post('categories')
   @ApiOperation({ summary: 'Create a new category' })
   createCategory(@Request() req: any, @Body() dto: CreateCategoryDto) {
-    return this.projectsService.createCategory(req.user.userId, dto);
+    return this.architecturesService.createCategory(req.user.userId, dto);
   }
 
   @Patch('categories/reorder')
@@ -61,7 +61,7 @@ export class ProjectsController {
   async reorderCategories(
     @Body() body: { categoryIds: number[]; parentId: number | null },
   ) {
-    await this.projectsService.reorderCategories(
+    await this.architecturesService.reorderCategories(
       body.categoryIds,
       body.parentId,
     );
@@ -71,26 +71,26 @@ export class ProjectsController {
   @Patch('categories/:id')
   @ApiOperation({ summary: 'Update a category' })
   updateCategory(@Param('id') id: string, @Body() dto: UpdateCategoryDto) {
-    return this.projectsService.updateCategory(+id, dto);
+    return this.architecturesService.updateCategory(+id, dto);
   }
 
   @Delete('categories/:id')
   @ApiOperation({ summary: 'Delete a category' })
   async deleteCategory(@Param('id') id: string) {
-    await this.projectsService.deleteCategory(+id);
+    await this.architecturesService.deleteCategory(+id);
     return { message: 'Category deleted successfully' };
   }
 
   @Get('contents/:categoryId')
   @ApiOperation({ summary: 'Get contents by category (shared)' })
   getContents(@Param('categoryId') categoryId: string) {
-    return this.projectsService.getContents(+categoryId);
+    return this.architecturesService.getContents(+categoryId);
   }
 
   @Post('contents')
   @ApiOperation({ summary: 'Create a new content' })
   createContent(@Request() req: any, @Body() dto: CreateContentDto) {
-    return this.projectsService.createContent(req.user.userId, dto);
+    return this.architecturesService.createContent(req.user.userId, dto);
   }
 
   @Patch('contents/reorder')
@@ -98,7 +98,7 @@ export class ProjectsController {
   async reorderContents(
     @Body() body: { categoryId: number; contentIds: number[] },
   ) {
-    await this.projectsService.reorderContents(
+    await this.architecturesService.reorderContents(
       body.categoryId,
       body.contentIds,
     );
@@ -108,13 +108,13 @@ export class ProjectsController {
   @Patch('contents/:id')
   @ApiOperation({ summary: 'Update a content' })
   updateContent(@Param('id') id: string, @Body() dto: UpdateContentDto) {
-    return this.projectsService.updateContent(+id, dto);
+    return this.architecturesService.updateContent(+id, dto);
   }
 
   @Delete('contents/:id')
   @ApiOperation({ summary: 'Delete a content' })
   async deleteContent(@Param('id') id: string) {
-    await this.projectsService.deleteContent(+id);
+    await this.architecturesService.deleteContent(+id);
     return { message: 'Content deleted successfully' };
   }
 
@@ -122,7 +122,7 @@ export class ProjectsController {
   @Get('categories/:categoryId/files')
   @ApiOperation({ summary: 'Get files by category (shared)' })
   getFiles(@Param('categoryId') categoryId: string) {
-    return this.projectsService.getFiles(+categoryId);
+    return this.architecturesService.getFiles(+categoryId);
   }
 
   @Post('categories/:categoryId/files')
@@ -134,20 +134,24 @@ export class ProjectsController {
     @Param('categoryId') categoryId: string,
     @UploadedFile() file: Express.Multer.File,
   ) {
-    return this.projectsService.uploadFile(req.user.userId, +categoryId, file);
+    return this.architecturesService.uploadFile(
+      req.user.userId,
+      +categoryId,
+      file,
+    );
   }
 
   @Delete('files/:id')
   @ApiOperation({ summary: 'Delete a file' })
   async deleteFile(@Param('id') id: string) {
-    await this.projectsService.deleteFile(+id);
+    await this.architecturesService.deleteFile(+id);
     return { message: 'File deleted successfully' };
   }
 
   @Patch('files/:id/rename')
   @ApiOperation({ summary: 'Rename a file' })
   renameFile(@Param('id') id: string, @Body() body: { newName: string }) {
-    return this.projectsService.renameFile(+id, body.newName);
+    return this.architecturesService.renameFile(+id, body.newName);
   }
 
   @Get('files/:id/download')
@@ -156,7 +160,7 @@ export class ProjectsController {
     @Param('id') id: string,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const file = await this.projectsService.getFileById(+id);
+    const file = await this.architecturesService.getFileById(+id);
     if (!file) {
       return { message: 'File not found' };
     }

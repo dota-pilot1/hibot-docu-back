@@ -10,7 +10,7 @@ import {
   jsonb,
 } from 'drizzle-orm/pg-core';
 
-export const projectTypeEnum = pgEnum('project_type', [
+export const architectureTypeEnum = pgEnum('architecture_type', [
   'ROOT',
   'NOTE',
   'MERMAID',
@@ -30,11 +30,13 @@ export const contentTypeEnum = pgEnum('content_type', [
   'FIGMA',
 ]);
 
-export const projectCategories = pgTable('project_categories', {
+export const architectureCategories = pgTable('architecture_categories', {
   id: serial('id').primaryKey(),
   userId: integer('user_id').notNull(),
   name: varchar('name', { length: 255 }).notNull(),
-  projectType: projectTypeEnum('project_type').default('NOTE').notNull(),
+  architectureType: architectureTypeEnum('architecture_type')
+    .default('NOTE')
+    .notNull(),
   techType: varchar('tech_type', { length: 50 }),
   description: text('description'),
   parentId: integer('parent_id'),
@@ -46,7 +48,7 @@ export const projectCategories = pgTable('project_categories', {
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
 
-export const projectContents = pgTable('project_contents', {
+export const architectureContents = pgTable('architecture_contents', {
   id: serial('id').primaryKey(),
   categoryId: integer('category_id').notNull(),
   userId: integer('user_id').notNull(),
@@ -73,21 +75,24 @@ export const fileTypeEnum = pgEnum('file_type', [
 ]);
 
 // Category files table
-export const projectCategoryFiles = pgTable('project_category_files', {
-  id: serial('id').primaryKey(),
-  categoryId: integer('category_id').notNull(),
-  userId: integer('user_id').notNull(),
-  originalName: varchar('original_name', { length: 255 }).notNull(),
-  storedName: varchar('stored_name', { length: 255 }).notNull(),
-  s3Url: text('s3_url').notNull(),
-  filePath: text('file_path').notNull(),
-  fileSize: integer('file_size').notNull(),
-  mimeType: varchar('mime_type', { length: 100 }).notNull(),
-  fileType: fileTypeEnum('file_type').default('OTHER').notNull(),
-  displayOrder: integer('display_order').default(0).notNull(),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-  updatedAt: timestamp('updated_at').defaultNow(),
-});
+export const architectureCategoryFiles = pgTable(
+  'architecture_category_files',
+  {
+    id: serial('id').primaryKey(),
+    categoryId: integer('category_id').notNull(),
+    userId: integer('user_id').notNull(),
+    originalName: varchar('original_name', { length: 255 }).notNull(),
+    storedName: varchar('stored_name', { length: 255 }).notNull(),
+    s3Url: text('s3_url').notNull(),
+    filePath: text('file_path').notNull(),
+    fileSize: integer('file_size').notNull(),
+    mimeType: varchar('mime_type', { length: 100 }).notNull(),
+    fileType: fileTypeEnum('file_type').default('OTHER').notNull(),
+    displayOrder: integer('display_order').default(0).notNull(),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow(),
+  },
+);
 
 // Note type enum
 export const noteTypeEnum = pgEnum('note_type', [
@@ -180,12 +185,15 @@ export const posts = pgTable('posts', {
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
 
-export type ProjectCategory = typeof projectCategories.$inferSelect;
-export type NewProjectCategory = typeof projectCategories.$inferInsert;
-export type ProjectContent = typeof projectContents.$inferSelect;
-export type NewProjectContent = typeof projectContents.$inferInsert;
-export type ProjectCategoryFile = typeof projectCategoryFiles.$inferSelect;
-export type NewProjectCategoryFile = typeof projectCategoryFiles.$inferInsert;
+export type ArchitectureCategory = typeof architectureCategories.$inferSelect;
+export type NewArchitectureCategory =
+  typeof architectureCategories.$inferInsert;
+export type ArchitectureContent = typeof architectureContents.$inferSelect;
+export type NewArchitectureContent = typeof architectureContents.$inferInsert;
+export type ArchitectureCategoryFile =
+  typeof architectureCategoryFiles.$inferSelect;
+export type NewArchitectureCategoryFile =
+  typeof architectureCategoryFiles.$inferInsert;
 export type Post = typeof posts.$inferSelect;
 export type NewPost = typeof posts.$inferInsert;
 

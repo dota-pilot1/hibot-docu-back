@@ -4,7 +4,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
-import { ProjectsModule } from './projects/projects.module';
+import { ArchitecturesModule } from './architectures/architectures.module';
 import { CommonModule } from './common/common.module';
 import { AiModule } from './ai/ai.module';
 import { PostsModule } from './posts/posts.module';
@@ -23,7 +23,7 @@ import { ChatRoomsModule } from './chat-rooms/chat-rooms.module';
     }),
     UsersModule,
     AuthModule,
-    ProjectsModule,
+    ArchitecturesModule,
     CommonModule,
     AiModule,
     PostsModule,

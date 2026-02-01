@@ -2,14 +2,14 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { eq, and } from 'drizzle-orm';
 import { db } from '../db/client';
 import {
-  projectCategories,
-  projectContents,
-  projectCategoryFiles,
+  architectureCategories,
+  architectureContents,
+  architectureCategoryFiles,
 } from '../db/schema';
 import type {
-  ProjectCategory,
-  ProjectContent,
-  ProjectCategoryFile,
+  ArchitectureCategory,
+  ArchitectureContent,
+  ArchitectureCategoryFile,
 } from '../db/schema';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
@@ -19,23 +19,27 @@ import { S3Service } from '../common/s3.service';
 import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
-export class ProjectsService {
+export class ArchitecturesService {
   constructor(private readonly s3Service: S3Service) {}
 
   // Category operations - 전체 공유 (userId 필터링 제거)
   async getTree(): Promise<any[]> {
-    console.log('[ProjectsService] getTree called (shared)');
+    console.log('[ArchitecturesService] getTree called (shared)');
 
     const categories = await db
       .select()
-      .from(projectCategories)
-      .where(eq(projectCategories.isActive, true))
-      .orderBy(projectCategories.displayOrder);
+      .from(architectureCategories)
+      .where(eq(architectureCategories.isActive, true))
+      .orderBy(architectureCategories.displayOrder);
 
-    console.log('[ProjectsService] Found categories:', categories.length);
+    console.log('[ArchitecturesService] Found categories:', categories.length);
 
     const tree = this.buildTree(categories);
-    console.log('[ProjectsService] Built tree:', tree.length, 'root nodes');
+    console.log(
+      '[ArchitecturesService] Built tree:',
+      tree.length,
+      'root nodes',
+    );
 
     return tree;
   }
@@ -43,14 +47,14 @@ export class ProjectsService {
   async getCategoriesByType(type: string): Promise<any[]> {
     const categories = await db
       .select()
-      .from(projectCategories)
+      .from(architectureCategories)
       .where(
         and(
-          eq(projectCategories.projectType, type as any),
-          eq(projectCategories.isActive, true),
+          eq(architectureCategories.architectureType, type as any),
+          eq(architectureCategories.isActive, true),
         ),
       )
-      .orderBy(projectCategories.displayOrder);
+      .orderBy(architectureCategories.displayOrder);
 
     return this.buildTree(categories);
   }
@@ -58,24 +62,24 @@ export class ProjectsService {
   async createCategory(
     userId: number,
     dto: CreateCategoryDto,
-  ): Promise<ProjectCategory> {
+  ): Promise<ArchitectureCategory> {
     let depth = 0;
     if (dto.parentId) {
       const parent = await db
         .select()
-        .from(projectCategories)
-        .where(eq(projectCategories.id, dto.parentId))
+        .from(architectureCategories)
+        .where(eq(architectureCategories.id, dto.parentId))
         .limit(1);
 
       depth = parent[0] ? parent[0].depth + 1 : 0;
     }
 
     const [category] = await db
-      .insert(projectCategories)
+      .insert(architectureCategories)
       .values({
         userId, // 생성자 정보는 저장
         name: dto.name,
-        projectType: dto.projectType as any,
+        architectureType: dto.architectureType as any,
         techType: dto.techType,
         description: dto.description,
         parentId: dto.parentId,
@@ -90,11 +94,11 @@ export class ProjectsService {
   async updateCategory(
     id: number,
     dto: UpdateCategoryDto,
-  ): Promise<ProjectCategory> {
+  ): Promise<ArchitectureCategory> {
     const existing = await db
       .select()
-      .from(projectCategories)
-      .where(eq(projectCategories.id, id))
+      .from(architectureCategories)
+      .where(eq(architectureCategories.id, id))
       .limit(1);
 
     if (!existing[0]) {
@@ -102,13 +106,13 @@ export class ProjectsService {
     }
 
     const [updated] = await db
-      .update(projectCategories)
+      .update(architectureCategories)
       .set({
         ...dto,
-        projectType: dto.projectType as any,
+        architectureType: dto.architectureType as any,
         updatedAt: new Date(),
       })
-      .where(eq(projectCategories.id, id))
+      .where(eq(architectureCategories.id, id))
       .returning();
 
     return updated;
@@ -117,8 +121,8 @@ export class ProjectsService {
   async deleteCategory(id: number): Promise<void> {
     const existing = await db
       .select()
-      .from(projectCategories)
-      .where(eq(projectCategories.id, id))
+      .from(architectureCategories)
+      .where(eq(architectureCategories.id, id))
       .limit(1);
 
     if (!existing[0]) {
@@ -127,15 +131,15 @@ export class ProjectsService {
 
     // Soft delete
     await db
-      .update(projectCategories)
+      .update(architectureCategories)
       .set({ isActive: false, updatedAt: new Date() })
-      .where(eq(projectCategories.id, id));
+      .where(eq(architectureCategories.id, id));
 
     // Soft delete children
     const children = await db
       .select()
-      .from(projectCategories)
-      .where(eq(projectCategories.parentId, id));
+      .from(architectureCategories)
+      .where(eq(architectureCategories.parentId, id));
 
     for (const child of children) {
       await this.deleteCategory(child.id);
@@ -143,25 +147,25 @@ export class ProjectsService {
   }
 
   // Content operations - 전체 공유
-  async getContents(categoryId: number): Promise<ProjectContent[]> {
+  async getContents(categoryId: number): Promise<ArchitectureContent[]> {
     return db
       .select()
-      .from(projectContents)
+      .from(architectureContents)
       .where(
         and(
-          eq(projectContents.categoryId, categoryId),
-          eq(projectContents.isActive, true),
+          eq(architectureContents.categoryId, categoryId),
+          eq(architectureContents.isActive, true),
         ),
       )
-      .orderBy(projectContents.displayOrder);
+      .orderBy(architectureContents.displayOrder);
   }
 
   async createContent(
     userId: number,
     dto: CreateContentDto,
-  ): Promise<ProjectContent> {
+  ): Promise<ArchitectureContent> {
     const [content] = await db
-      .insert(projectContents)
+      .insert(architectureContents)
       .values({
         userId, // 생성자 정보는 저장
         categoryId: dto.categoryId,
@@ -178,11 +182,11 @@ export class ProjectsService {
   async updateContent(
     id: number,
     dto: UpdateContentDto,
-  ): Promise<ProjectContent> {
+  ): Promise<ArchitectureContent> {
     const existing = await db
       .select()
-      .from(projectContents)
-      .where(eq(projectContents.id, id))
+      .from(architectureContents)
+      .where(eq(architectureContents.id, id))
       .limit(1);
 
     if (!existing[0]) {
@@ -190,13 +194,13 @@ export class ProjectsService {
     }
 
     const [updated] = await db
-      .update(projectContents)
+      .update(architectureContents)
       .set({
         ...dto,
         contentType: dto.contentType as any,
         updatedAt: new Date(),
       })
-      .where(eq(projectContents.id, id))
+      .where(eq(architectureContents.id, id))
       .returning();
 
     return updated;
@@ -205,8 +209,8 @@ export class ProjectsService {
   async deleteContent(id: number): Promise<void> {
     const existing = await db
       .select()
-      .from(projectContents)
-      .where(eq(projectContents.id, id))
+      .from(architectureContents)
+      .where(eq(architectureContents.id, id))
       .limit(1);
 
     if (!existing[0]) {
@@ -214,16 +218,16 @@ export class ProjectsService {
     }
 
     await db
-      .update(projectContents)
+      .update(architectureContents)
       .set({ isActive: false, updatedAt: new Date() })
-      .where(eq(projectContents.id, id));
+      .where(eq(architectureContents.id, id));
   }
 
   async reorderCategories(
     categoryIds: number[],
     parentId: number | null = null,
   ): Promise<void> {
-    console.log('[ProjectsService] reorderCategories', {
+    console.log('[ArchitecturesService] reorderCategories', {
       categoryIds,
       parentId,
     });
@@ -231,13 +235,13 @@ export class ProjectsService {
     await db.transaction(async (tx) => {
       for (let i = 0; i < categoryIds.length; i++) {
         await tx
-          .update(projectCategories)
+          .update(architectureCategories)
           .set({
             displayOrder: i,
             parentId: parentId,
             updatedAt: new Date(),
           })
-          .where(eq(projectCategories.id, categoryIds[i]));
+          .where(eq(architectureCategories.id, categoryIds[i]));
       }
     });
   }
@@ -246,7 +250,7 @@ export class ProjectsService {
     categoryId: number,
     contentIds: number[],
   ): Promise<void> {
-    console.log('[ProjectsService] reorderContents', {
+    console.log('[ArchitecturesService] reorderContents', {
       categoryId,
       contentIds,
     });
@@ -254,13 +258,13 @@ export class ProjectsService {
     await db.transaction(async (tx) => {
       for (let i = 0; i < contentIds.length; i++) {
         await tx
-          .update(projectContents)
+          .update(architectureContents)
           .set({
             displayOrder: i,
             categoryId: categoryId,
             updatedAt: new Date(),
           })
-          .where(eq(projectContents.id, contentIds[i]));
+          .where(eq(architectureContents.id, contentIds[i]));
       }
     });
   }
@@ -287,25 +291,25 @@ export class ProjectsService {
   }
 
   // File operations - 전체 공유
-  async getFiles(categoryId: number): Promise<ProjectCategoryFile[]> {
+  async getFiles(categoryId: number): Promise<ArchitectureCategoryFile[]> {
     return db
       .select()
-      .from(projectCategoryFiles)
-      .where(eq(projectCategoryFiles.categoryId, categoryId))
-      .orderBy(projectCategoryFiles.displayOrder);
+      .from(architectureCategoryFiles)
+      .where(eq(architectureCategoryFiles.categoryId, categoryId))
+      .orderBy(architectureCategoryFiles.displayOrder);
   }
 
   async uploadFile(
     userId: number,
     categoryId: number,
     file: Express.Multer.File,
-  ): Promise<ProjectCategoryFile> {
+  ): Promise<ArchitectureCategoryFile> {
     const originalName = Buffer.from(file.originalname, 'latin1').toString(
       'utf8',
     );
     const extension = this.getFileExtension(originalName);
     const storedName = `${uuidv4()}${extension}`;
-    const folder = `project-files/${categoryId}`;
+    const folder = `architecture-files/${categoryId}`;
     const filePath = `${folder}/${storedName}`;
 
     const s3Url = await this.s3Service.uploadFile(file, folder, storedName);
@@ -313,7 +317,7 @@ export class ProjectsService {
     const fileType = this.determineFileType(extension, file.mimetype);
 
     const [saved] = await db
-      .insert(projectCategoryFiles)
+      .insert(architectureCategoryFiles)
       .values({
         categoryId,
         userId, // 생성자 정보는 저장
@@ -333,8 +337,8 @@ export class ProjectsService {
   async deleteFile(fileId: number): Promise<void> {
     const existing = await db
       .select()
-      .from(projectCategoryFiles)
-      .where(eq(projectCategoryFiles.id, fileId))
+      .from(architectureCategoryFiles)
+      .where(eq(architectureCategoryFiles.id, fileId))
       .limit(1);
 
     if (!existing[0]) {
@@ -348,18 +352,18 @@ export class ProjectsService {
     }
 
     await db
-      .delete(projectCategoryFiles)
-      .where(eq(projectCategoryFiles.id, fileId));
+      .delete(architectureCategoryFiles)
+      .where(eq(architectureCategoryFiles.id, fileId));
   }
 
   async renameFile(
     fileId: number,
     newName: string,
-  ): Promise<ProjectCategoryFile> {
+  ): Promise<ArchitectureCategoryFile> {
     const existing = await db
       .select()
-      .from(projectCategoryFiles)
-      .where(eq(projectCategoryFiles.id, fileId))
+      .from(architectureCategoryFiles)
+      .where(eq(architectureCategoryFiles.id, fileId))
       .limit(1);
 
     if (!existing[0]) {
@@ -367,22 +371,22 @@ export class ProjectsService {
     }
 
     const [updated] = await db
-      .update(projectCategoryFiles)
+      .update(architectureCategoryFiles)
       .set({
         originalName: newName,
         updatedAt: new Date(),
       })
-      .where(eq(projectCategoryFiles.id, fileId))
+      .where(eq(architectureCategoryFiles.id, fileId))
       .returning();
 
     return updated;
   }
 
-  async getFileById(fileId: number): Promise<ProjectCategoryFile | null> {
+  async getFileById(fileId: number): Promise<ArchitectureCategoryFile | null> {
     const [file] = await db
       .select()
-      .from(projectCategoryFiles)
-      .where(eq(projectCategoryFiles.id, fileId))
+      .from(architectureCategoryFiles)
+      .where(eq(architectureCategoryFiles.id, fileId))
       .limit(1);
 
     return file || null;
