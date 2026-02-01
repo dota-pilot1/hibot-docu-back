@@ -15,6 +15,7 @@ import { DocumentsModule } from './documents/documents.module';
 import { ChatProjectsModule } from './chat-projects/chat-projects.module';
 import { ChatTeamsModule } from './chat-teams/chat-teams.module';
 import { ChatRoomsModule } from './chat-rooms/chat-rooms.module';
+import { TasksModule } from './tasks/tasks.module';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { ChatRoomsModule } from './chat-rooms/chat-rooms.module';
     ChatProjectsModule,
     ChatTeamsModule,
     ChatRoomsModule,
+    TasksModule,
   ],
   controllers: [AppController],
   providers: [AppService],

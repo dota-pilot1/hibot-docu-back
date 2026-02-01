@@ -337,3 +337,77 @@ export const chatMessages = pgTable('chat_messages', {
 
 export type ChatMessage = typeof chatMessages.$inferSelect;
 export type NewChatMessage = typeof chatMessages.$inferInsert;
+
+// ============================================
+// Task Management (업무 관리)
+// ============================================
+
+// Task 상태 enum
+// - 주요 상태 3개: pending, in_progress, completed (UI 전면 노출)
+// - 보조 상태 2개: blocked, review (아이콘/뱃지로만 표시)
+export const taskStatusEnum = pgEnum('task_status', [
+  'pending', // 대기 (주요)
+  'in_progress', // 진행중 (주요)
+  'completed', // 완료 (주요)
+  'blocked', // 막힘 (보조)
+  'review', // 리뷰중 (보조)
+]);
+
+// Task 우선순위 enum
+export const taskPriorityEnum = pgEnum('task_priority', [
+  'low',
+  'medium',
+  'high',
+]);
+
+// Task 활동 타입 enum
+export const taskActivityTypeEnum = pgEnum('task_activity_type', [
+  'created', // Task 생성
+  'updated', // Task 수정
+  'completed', // Task 완료
+  'commented', // 코멘트 추가
+  'status_changed', // 상태 변경
+]);
+
+// Tasks table (업무)
+export const tasks = pgTable('tasks', {
+  id: serial('id').primaryKey(),
+  title: varchar('title', { length: 255 }).notNull(),
+  description: text('description'),
+  status: taskStatusEnum('status').default('pending').notNull(),
+  priority: taskPriorityEnum('priority').default('medium').notNull(),
+  assigneeId: integer('assignee_id').notNull(),
+  dueDate: timestamp('due_date'),
+  startedAt: timestamp('started_at'),
+  completedAt: timestamp('completed_at'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+export type Task = typeof tasks.$inferSelect;
+export type NewTask = typeof tasks.$inferInsert;
+
+// Task activities table (활동 로그)
+export const taskActivities = pgTable('task_activities', {
+  id: serial('id').primaryKey(),
+  taskId: integer('task_id').notNull(),
+  userId: integer('user_id').notNull(),
+  type: taskActivityTypeEnum('type').notNull(),
+  description: text('description').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+export type TaskActivity = typeof taskActivities.$inferSelect;
+export type NewTaskActivity = typeof taskActivities.$inferInsert;
+
+// User memos table (개인 메모)
+export const userMemos = pgTable('user_memos', {
+  id: serial('id').primaryKey(),
+  userId: integer('user_id').notNull().unique(),
+  memo: text('memo'),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  updatedBy: integer('updated_by'),
+});
+
+export type UserMemo = typeof userMemos.$inferSelect;
+export type NewUserMemo = typeof userMemos.$inferInsert;
