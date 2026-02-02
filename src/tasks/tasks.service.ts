@@ -500,9 +500,7 @@ export class TasksService {
   // Issue Replies (이슈 답변)
   // ============================================
 
-  async getIssueReplies(
-    issueId: number,
-  ): Promise<
+  async getIssueReplies(issueId: number): Promise<
     (TaskIssueReply & {
       user?: { id: number; name: string | null; profileImage: string | null };
     })[]
@@ -543,12 +541,26 @@ export class TasksService {
       throw new NotFoundException(`Issue #${issueId} not found`);
     }
 
+    // 대댓글인 경우 부모 답변 존재 확인
+    if (dto.parentId) {
+      const parentReply = await db
+        .select()
+        .from(taskIssueReplies)
+        .where(eq(taskIssueReplies.id, dto.parentId))
+        .limit(1);
+
+      if (parentReply.length === 0) {
+        throw new NotFoundException(`Parent reply #${dto.parentId} not found`);
+      }
+    }
+
     const result = await db
       .insert(taskIssueReplies)
       .values({
         issueId,
         userId,
         content: dto.content,
+        parentId: dto.parentId || null,
       })
       .returning();
 

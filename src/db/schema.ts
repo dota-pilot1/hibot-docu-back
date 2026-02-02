@@ -427,10 +427,11 @@ export const taskIssues = pgTable('task_issues', {
 export type TaskIssue = typeof taskIssues.$inferSelect;
 export type NewTaskIssue = typeof taskIssues.$inferInsert;
 
-// Task issue replies table (이슈 답변)
+// Task issue replies table (이슈 답변/대댓글)
 export const taskIssueReplies = pgTable('task_issue_replies', {
   id: serial('id').primaryKey(),
   issueId: integer('issue_id').notNull(),
+  parentId: integer('parent_id'), // 대댓글인 경우 부모 답변 ID
   userId: integer('user_id').notNull(),
   content: text('content').notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
