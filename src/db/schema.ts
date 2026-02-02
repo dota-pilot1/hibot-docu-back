@@ -9,6 +9,7 @@ import {
   pgEnum,
   jsonb,
 } from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
 
 export const architectureTypeEnum = pgEnum('architecture_type', [
   'ROOT',
@@ -440,3 +441,108 @@ export const taskIssueReplies = pgTable('task_issue_replies', {
 
 export type TaskIssueReply = typeof taskIssueReplies.$inferSelect;
 export type NewTaskIssueReply = typeof taskIssueReplies.$inferInsert;
+
+// ============================================
+// Task Details (업무 상세)
+// ============================================
+
+// Task details table (업무 상세 정보)
+export const taskDetails = pgTable('task_details', {
+  id: serial('id').primaryKey(),
+  taskId: integer('task_id')
+    .notNull()
+    .unique()
+    .references(() => tasks.id, { onDelete: 'cascade' }),
+
+  // 상세 설명 (Markdown)
+  description: text('description').default(''),
+
+  // 피그마 링크
+  figmaUrl: text('figma_url'),
+  figmaEmbedKey: varchar('figma_embed_key', { length: 255 }),
+
+  // 메타 정보
+  estimatedHours: varchar('estimated_hours', { length: 10 }), // decimal을 varchar로 저장
+  actualHours: varchar('actual_hours', { length: 10 }),
+  difficulty: varchar('difficulty', { length: 20 }), // 'easy', 'medium', 'hard'
+  progress: integer('progress').default(0), // 0-100
+
+  // 태그 및 라벨
+  tags: jsonb('tags').default(sql`'[]'::jsonb`),
+
+  // 체크리스트
+  checklist: jsonb('checklist').default(sql`'[]'::jsonb`),
+
+  // 관련 링크
+  links: jsonb('links').default(sql`'[]'::jsonb`),
+
+  // 메타
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  updatedBy: integer('updated_by').references(() => users.id),
+});
+
+export type TaskDetail = typeof taskDetails.$inferSelect;
+export type NewTaskDetail = typeof taskDetails.$inferInsert;
+
+// Task detail images table (업무 상세 이미지)
+export const taskDetailImages = pgTable('task_detail_images', {
+  id: serial('id').primaryKey(),
+  taskDetailId: integer('task_detail_id')
+    .notNull()
+    .references(() => taskDetails.id, { onDelete: 'cascade' }),
+
+  // 파일 정보
+  originalName: varchar('original_name', { length: 255 }).notNull(),
+  storedName: varchar('stored_name', { length: 255 }).notNull(),
+  s3Url: text('s3_url').notNull(),
+  filePath: text('file_path').notNull(),
+
+  fileSize: integer('file_size').notNull(),
+  mimeType: varchar('mime_type', { length: 100 }).notNull(),
+  width: integer('width'),
+  height: integer('height'),
+
+  // 이미지 설명
+  caption: text('caption'),
+  altText: varchar('alt_text', { length: 255 }),
+
+  // 순서
+  displayOrder: integer('display_order').default(0).notNull(),
+
+  // 메타
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  uploadedBy: integer('uploaded_by').references(() => users.id),
+});
+
+export type TaskDetailImage = typeof taskDetailImages.$inferSelect;
+export type NewTaskDetailImage = typeof taskDetailImages.$inferInsert;
+
+// Task detail attachments table (업무 상세 첨부파일)
+export const taskDetailAttachments = pgTable('task_detail_attachments', {
+  id: serial('id').primaryKey(),
+  taskDetailId: integer('task_detail_id')
+    .notNull()
+    .references(() => taskDetails.id, { onDelete: 'cascade' }),
+
+  // 파일 정보
+  originalName: varchar('original_name', { length: 255 }).notNull(),
+  storedName: varchar('stored_name', { length: 255 }).notNull(),
+  s3Url: text('s3_url').notNull(),
+  filePath: text('file_path').notNull(),
+
+  fileSize: integer('file_size').notNull(),
+  mimeType: varchar('mime_type', { length: 100 }).notNull(),
+  fileType: varchar('file_type', { length: 50 }),
+
+  // 설명
+  description: text('description'),
+  displayOrder: integer('display_order').default(0).notNull(),
+
+  // 메타
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  uploadedBy: integer('uploaded_by').references(() => users.id),
+});
+
+export type TaskDetailAttachment = typeof taskDetailAttachments.$inferSelect;
+export type NewTaskDetailAttachment = typeof taskDetailAttachments.$inferInsert;
