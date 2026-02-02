@@ -13,6 +13,8 @@ import {
 import { TasksService } from './tasks.service';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto, UpdateTaskStatusDto } from './dto/update-task.dto';
+import { CreateTaskIssueDto } from './dto/create-task-issue.dto';
+import { UpdateTaskIssueDto } from './dto/update-task-issue.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 @Controller('tasks')
@@ -91,6 +93,42 @@ export class TasksController {
   @Get('departments/activities/today/summary')
   getDepartmentActivitySummaryToday() {
     return this.tasksService.getDepartmentActivitySummaryToday();
+  }
+
+  // ============================================
+  // Task Issues (이슈/댓글)
+  // ============================================
+
+  @Get(':taskId/issues')
+  getTaskIssues(@Param('taskId', ParseIntPipe) taskId: number) {
+    return this.tasksService.getTaskIssues(taskId);
+  }
+
+  @Post(':taskId/issues')
+  createTaskIssue(
+    @Param('taskId', ParseIntPipe) taskId: number,
+    @Body() dto: CreateTaskIssueDto,
+    @Req() req: any,
+  ) {
+    return this.tasksService.createTaskIssue(taskId, req.user.userId, dto);
+  }
+
+  @Patch('issues/:issueId')
+  updateTaskIssue(
+    @Param('issueId', ParseIntPipe) issueId: number,
+    @Body() dto: UpdateTaskIssueDto,
+  ) {
+    return this.tasksService.updateTaskIssue(issueId, dto);
+  }
+
+  @Delete('issues/:issueId')
+  deleteTaskIssue(@Param('issueId', ParseIntPipe) issueId: number) {
+    return this.tasksService.deleteTaskIssue(issueId);
+  }
+
+  @Patch('issues/:issueId/resolve')
+  resolveTaskIssue(@Param('issueId', ParseIntPipe) issueId: number) {
+    return this.tasksService.resolveTaskIssue(issueId);
   }
 }
 

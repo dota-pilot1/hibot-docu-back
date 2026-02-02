@@ -161,4 +161,27 @@ export class UsersController {
     await this.usersService.reorderUsers(body.userIds, body.departmentId);
     return { success: true };
   }
+
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Check username availability' })
+  @UseGuards(JwtAuthGuard)
+  @Get('check-name/:name')
+  async checkNameAvailability(
+    @Param('name') name: string,
+    @Request() req: any,
+  ) {
+    const isAvailable = await this.usersService.checkNameAvailability(
+      name,
+      req.user.userId,
+    );
+    return { available: isAvailable };
+  }
+
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Update own username' })
+  @UseGuards(JwtAuthGuard)
+  @Patch('me/name')
+  async updateMyName(@Body() body: { name: string }, @Request() req: any) {
+    return this.usersService.updateName(req.user.userId, body.name);
+  }
 }

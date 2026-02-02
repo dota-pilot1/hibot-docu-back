@@ -412,3 +412,17 @@ export const userMemos = pgTable('user_memos', {
 
 export type UserMemo = typeof userMemos.$inferSelect;
 export type NewUserMemo = typeof userMemos.$inferInsert;
+
+// Task issues table (업무 이슈/댓글)
+export const taskIssues = pgTable('task_issues', {
+  id: serial('id').primaryKey(),
+  taskId: integer('task_id').notNull(),
+  userId: integer('user_id').notNull(),
+  content: text('content').notNull(),
+  isResolved: boolean('is_resolved').default(false).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+export type TaskIssue = typeof taskIssues.$inferSelect;
+export type NewTaskIssue = typeof taskIssues.$inferInsert;

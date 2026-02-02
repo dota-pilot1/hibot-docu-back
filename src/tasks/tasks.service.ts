@@ -4,15 +4,19 @@ import { db } from '../db/client';
 import {
   tasks,
   taskActivities,
+  taskIssues,
   userMemos,
   users,
   departments,
   Task,
   TaskActivity,
+  TaskIssue,
   UserMemo,
 } from '../db/schema';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto, UpdateTaskStatusDto } from './dto/update-task.dto';
+import { CreateTaskIssueDto } from './dto/create-task-issue.dto';
+import { UpdateTaskIssueDto } from './dto/update-task-issue.dto';
 
 @Injectable()
 export class TasksService {
@@ -363,5 +367,130 @@ export class TasksService {
 
       return result[0];
     }
+  }
+
+  // ============================================
+  // Task Issues (이슈/댓글)
+  // ============================================
+
+  async getTaskIssues(
+    taskId: number,
+  ): Promise<
+    (TaskIssue & {
+      user?: { id: number; name: string | null; profileImage: string | null };
+    })[]
+  > {
+    const issues = await db
+      .select({
+        issue: taskIssues,
+        user: {
+          id: users.id,
+          name: users.name,
+          profileImage: users.profileImage,
+        },
+      })
+      .from(taskIssues)
+      .leftJoin(users, eq(taskIssues.userId, users.id))
+      .where(eq(taskIssues.taskId, taskId))
+      .orderBy(desc(taskIssues.createdAt));
+
+    return issues.map((row) => ({
+      ...row.issue,
+      user: row.user || undefined,
+    }));
+  }
+
+  async createTaskIssue(
+    taskId: number,
+    userId: number,
+    dto: CreateTaskIssueDto,
+  ): Promise<TaskIssue> {
+    await this.findOne(taskId); // Task 존재 확인
+
+    const result = await db
+      .insert(taskIssues)
+      .values({
+        taskId,
+        userId,
+        content: dto.content,
+      })
+      .returning();
+
+    // 활동 로그에도 기록
+    await this.createActivity(
+      taskId,
+      userId,
+      'commented',
+      `이슈 등록: ${dto.content.substring(0, 50)}${dto.content.length > 50 ? '...' : ''}`,
+    );
+
+    return result[0];
+  }
+
+  async updateTaskIssue(
+    issueId: number,
+    dto: UpdateTaskIssueDto,
+  ): Promise<TaskIssue> {
+    const existing = await db
+      .select()
+      .from(taskIssues)
+      .where(eq(taskIssues.id, issueId))
+      .limit(1);
+
+    if (existing.length === 0) {
+      throw new NotFoundException(`Issue #${issueId} not found`);
+    }
+
+    const updateData: Partial<TaskIssue> = {
+      updatedAt: new Date(),
+    };
+
+    if (dto.content !== undefined) updateData.content = dto.content;
+    if (dto.isResolved !== undefined) updateData.isResolved = dto.isResolved;
+
+    const result = await db
+      .update(taskIssues)
+      .set(updateData)
+      .where(eq(taskIssues.id, issueId))
+      .returning();
+
+    return result[0];
+  }
+
+  async deleteTaskIssue(issueId: number): Promise<void> {
+    const existing = await db
+      .select()
+      .from(taskIssues)
+      .where(eq(taskIssues.id, issueId))
+      .limit(1);
+
+    if (existing.length === 0) {
+      throw new NotFoundException(`Issue #${issueId} not found`);
+    }
+
+    await db.delete(taskIssues).where(eq(taskIssues.id, issueId));
+  }
+
+  async resolveTaskIssue(issueId: number): Promise<TaskIssue> {
+    const existing = await db
+      .select()
+      .from(taskIssues)
+      .where(eq(taskIssues.id, issueId))
+      .limit(1);
+
+    if (existing.length === 0) {
+      throw new NotFoundException(`Issue #${issueId} not found`);
+    }
+
+    const result = await db
+      .update(taskIssues)
+      .set({
+        isResolved: true,
+        updatedAt: new Date(),
+      })
+      .where(eq(taskIssues.id, issueId))
+      .returning();
+
+    return result[0];
   }
 }

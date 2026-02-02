@@ -120,4 +120,36 @@ export class UsersService {
       ),
     );
   }
+
+  async checkNameAvailability(
+    name: string,
+    excludeUserId?: number,
+  ): Promise<boolean> {
+    const [existingUser] = await db
+      .select()
+      .from(users)
+      .where(eq(users.name, name))
+      .limit(1);
+
+    if (!existingUser) return true;
+    if (excludeUserId && existingUser.id === excludeUserId) return true;
+    return false;
+  }
+
+  async updateName(id: number, name: string): Promise<Omit<User, 'password'>> {
+    // 중복 체크
+    const isAvailable = await this.checkNameAvailability(name, id);
+    if (!isAvailable) {
+      throw new ConflictException('이미 사용 중인 이름입니다.');
+    }
+
+    const [updated] = await db
+      .update(users)
+      .set({ name, updatedAt: new Date() })
+      .where(eq(users.id, id))
+      .returning();
+
+    const { password, ...result } = updated;
+    return result;
+  }
 }
