@@ -19,6 +19,7 @@ import { TasksModule } from './tasks/tasks.module';
 import { PilotsModule } from './pilots/pilots.module';
 import { ReviewsModule } from './reviews/reviews.module';
 import { DbAdminModule } from './db-admin/db-admin.module';
+import { FavoritesModule } from './favorites/favorites.module';
 
 @Module({
   imports: [
@@ -31,6 +32,7 @@ import { DbAdminModule } from './db-admin/db-admin.module';
     PilotsModule,
     ReviewsModule,
     DbAdminModule,
+    FavoritesModule,
     CommonModule,
     AiModule,
     PostsModule,

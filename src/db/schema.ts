@@ -759,3 +759,72 @@ export const dbAdminCategoryFiles = pgTable('db_admin_category_files', {
 
 export type DbAdminCategoryFile = typeof dbAdminCategoryFiles.$inferSelect;
 export type NewDbAdminCategoryFile = typeof dbAdminCategoryFiles.$inferInsert;
+
+// ============================================
+// Favorites Management (즐찾 관리)
+// ============================================
+
+// Favorite type enum
+export const favoriteTypeEnum = pgEnum('favorite_type', [
+  'ROOT',
+  'COMMAND',
+  'LINK',
+  'DOCUMENT',
+]);
+
+// Favorite categories table (즐찾 카테고리)
+export const favoriteCategories = pgTable('favorite_categories', {
+  id: serial('id').primaryKey(),
+  userId: integer('user_id').notNull(),
+  name: varchar('name', { length: 255 }).notNull(),
+  favoriteType: favoriteTypeEnum('favorite_type').default('ROOT').notNull(),
+  description: text('description'),
+  parentId: integer('parent_id'),
+  displayOrder: integer('display_order').default(0).notNull(),
+  depth: integer('depth').default(0).notNull(),
+  icon: varchar('icon', { length: 100 }),
+  isActive: boolean('is_active').default(true).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+export type FavoriteCategory = typeof favoriteCategories.$inferSelect;
+export type NewFavoriteCategory = typeof favoriteCategories.$inferInsert;
+
+// Favorite contents table (즐찾 컨텐츠)
+export const favoriteContents = pgTable('favorite_contents', {
+  id: serial('id').primaryKey(),
+  categoryId: integer('category_id').notNull(),
+  userId: integer('user_id').notNull(),
+  title: varchar('title', { length: 255 }).notNull(),
+  content: text('content'),
+  contentType: favoriteTypeEnum('content_type').default('COMMAND').notNull(),
+  metadata: jsonb('metadata'), // { url, language, tags }
+  displayOrder: integer('display_order').default(0).notNull(),
+  isActive: boolean('is_active').default(true).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+export type FavoriteContent = typeof favoriteContents.$inferSelect;
+export type NewFavoriteContent = typeof favoriteContents.$inferInsert;
+
+// Favorite category files table (즐찾 파일)
+export const favoriteCategoryFiles = pgTable('favorite_category_files', {
+  id: serial('id').primaryKey(),
+  categoryId: integer('category_id').notNull(),
+  userId: integer('user_id').notNull(),
+  originalName: varchar('original_name', { length: 255 }).notNull(),
+  storedName: varchar('stored_name', { length: 255 }).notNull(),
+  s3Url: text('s3_url').notNull(),
+  filePath: text('file_path').notNull(),
+  fileSize: integer('file_size').notNull(),
+  mimeType: varchar('mime_type', { length: 100 }).notNull(),
+  fileType: fileTypeEnum('file_type').default('OTHER').notNull(),
+  displayOrder: integer('display_order').default(0).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+});
+
+export type FavoriteCategoryFile = typeof favoriteCategoryFiles.$inferSelect;
+export type NewFavoriteCategoryFile = typeof favoriteCategoryFiles.$inferInsert;
