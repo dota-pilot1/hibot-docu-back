@@ -29,16 +29,17 @@ export class TasksService {
     const result = await db
       .select({
         task: tasks,
-        issueCount: sql<number>`(
-          SELECT COUNT(*)::int FROM task_issues WHERE task_issues.task_id = ${tasks.id}
-        )`,
+        issueCount:
+          sql<number>`COALESCE((SELECT COUNT(*)::int FROM task_issues ti WHERE ti.task_id = tasks.id), 0)`.as(
+            'issue_count',
+          ),
       })
       .from(tasks)
       .orderBy(desc(tasks.createdAt));
 
     return result.map((row) => ({
       ...row.task,
-      issueCount: row.issueCount,
+      issueCount: row.issueCount ?? 0,
     }));
   }
 
@@ -46,9 +47,10 @@ export class TasksService {
     const result = await db
       .select({
         task: tasks,
-        issueCount: sql<number>`(
-          SELECT COUNT(*)::int FROM task_issues WHERE task_issues.task_id = ${tasks.id}
-        )`,
+        issueCount:
+          sql<number>`COALESCE((SELECT COUNT(*)::int FROM task_issues ti WHERE ti.task_id = tasks.id), 0)`.as(
+            'issue_count',
+          ),
       })
       .from(tasks)
       .where(eq(tasks.assigneeId, userId))
@@ -56,7 +58,7 @@ export class TasksService {
 
     return result.map((row) => ({
       ...row.task,
-      issueCount: row.issueCount,
+      issueCount: row.issueCount ?? 0,
     }));
   }
 
