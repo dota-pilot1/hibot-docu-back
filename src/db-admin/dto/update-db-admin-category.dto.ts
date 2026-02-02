@@ -5,7 +5,6 @@ import {
   IsBoolean,
   IsEnum,
 } from 'class-validator';
-import { DbAdminType } from '../types/db-admin-type';
 
 export class UpdateDbAdminCategoryDto {
   @IsOptional()
@@ -14,7 +13,7 @@ export class UpdateDbAdminCategoryDto {
 
   @IsOptional()
   @IsEnum(['ROOT', 'NOTE', 'MERMAID', 'QA', 'FILE'])
-  dbAdminType?: DbAdminType;
+  dbAdminType?: 'ROOT' | 'NOTE' | 'MERMAID' | 'QA' | 'FILE';
 
   @IsOptional()
   @IsString()

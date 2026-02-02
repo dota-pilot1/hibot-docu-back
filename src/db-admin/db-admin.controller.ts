@@ -27,7 +27,6 @@ import { UpdateDbAdminCategoryDto } from './dto/update-db-admin-category.dto';
 import { CreateDbAdminContentDto } from './dto/create-db-admin-content.dto';
 import { UpdateDbAdminContentDto } from './dto/update-db-admin-content.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { DbAdminType } from './types/db-admin-type';
 import type { Response } from 'express';
 
 @ApiTags('db-admin')
@@ -46,7 +45,7 @@ export class DbAdminController {
   @Get('categories')
   @ApiOperation({ summary: 'Get categories by type (shared)' })
   @ApiQuery({ name: 'type', enum: ['ROOT', 'NOTE', 'MERMAID', 'QA', 'FILE'] })
-  getCategoriesByType(@Query('type') type: DbAdminType) {
+  getCategoriesByType(@Query('type') type: string) {
     return this.dbAdminService.getCategoriesByType(type);
   }
 
@@ -61,13 +60,19 @@ export class DbAdminController {
   async reorderCategories(
     @Body() body: { categoryIds: number[]; parentId: number | null },
   ) {
-    await this.dbAdminService.reorderCategories(body.categoryIds, body.parentId);
+    await this.dbAdminService.reorderCategories(
+      body.categoryIds,
+      body.parentId,
+    );
     return { message: 'Categories reordered successfully' };
   }
 
   @Patch('categories/:id')
   @ApiOperation({ summary: 'Update a category' })
-  updateCategory(@Param('id') id: string, @Body() dto: UpdateDbAdminCategoryDto) {
+  updateCategory(
+    @Param('id') id: string,
+    @Body() dto: UpdateDbAdminCategoryDto,
+  ) {
     return this.dbAdminService.updateCategory(+id, dto);
   }
 
