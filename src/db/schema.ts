@@ -617,3 +617,74 @@ export const pilotCategoryFiles = pgTable('pilot_category_files', {
 
 export type PilotCategoryFile = typeof pilotCategoryFiles.$inferSelect;
 export type NewPilotCategoryFile = typeof pilotCategoryFiles.$inferInsert;
+
+// ============================================
+// Review Management (코드 리뷰 관리)
+// ============================================
+
+// Review type enum
+export const reviewTypeEnum = pgEnum('review_type', [
+  'ROOT',
+  'NOTE',
+  'MERMAID',
+  'QA',
+  'FILE',
+]);
+
+// Review categories table (코드 리뷰 카테고리)
+export const reviewCategories = pgTable('review_categories', {
+  id: serial('id').primaryKey(),
+  userId: integer('user_id').notNull(),
+  name: varchar('name', { length: 255 }).notNull(),
+  reviewType: reviewTypeEnum('review_type').default('NOTE').notNull(),
+  reviewTarget: varchar('review_target', { length: 50 }),
+  description: text('description'),
+  parentId: integer('parent_id'),
+  displayOrder: integer('display_order').default(0).notNull(),
+  depth: integer('depth').default(0).notNull(),
+  icon: varchar('icon', { length: 100 }),
+  isActive: boolean('is_active').default(true).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+export type ReviewCategory = typeof reviewCategories.$inferSelect;
+export type NewReviewCategory = typeof reviewCategories.$inferInsert;
+
+// Review contents table (코드 리뷰 컨텐츠)
+export const reviewContents = pgTable('review_contents', {
+  id: serial('id').primaryKey(),
+  categoryId: integer('category_id').notNull(),
+  userId: integer('user_id').notNull(),
+  title: varchar('title', { length: 255 }).notNull(),
+  content: text('content'),
+  contentType: contentTypeEnum('content_type').default('NOTE').notNull(),
+  metadata: jsonb('metadata'),
+  displayOrder: integer('display_order').default(0).notNull(),
+  isActive: boolean('is_active').default(true).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+export type ReviewContent = typeof reviewContents.$inferSelect;
+export type NewReviewContent = typeof reviewContents.$inferInsert;
+
+// Review category files table (코드 리뷰 파일)
+export const reviewCategoryFiles = pgTable('review_category_files', {
+  id: serial('id').primaryKey(),
+  categoryId: integer('category_id').notNull(),
+  userId: integer('user_id').notNull(),
+  originalName: varchar('original_name', { length: 255 }).notNull(),
+  storedName: varchar('stored_name', { length: 255 }).notNull(),
+  s3Url: text('s3_url').notNull(),
+  filePath: text('file_path').notNull(),
+  fileSize: integer('file_size').notNull(),
+  mimeType: varchar('mime_type', { length: 100 }).notNull(),
+  fileType: fileTypeEnum('file_type').default('OTHER').notNull(),
+  displayOrder: integer('display_order').default(0).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+});
+
+export type ReviewCategoryFile = typeof reviewCategoryFiles.$inferSelect;
+export type NewReviewCategoryFile = typeof reviewCategoryFiles.$inferInsert;
