@@ -426,3 +426,16 @@ export const taskIssues = pgTable('task_issues', {
 
 export type TaskIssue = typeof taskIssues.$inferSelect;
 export type NewTaskIssue = typeof taskIssues.$inferInsert;
+
+// Task issue replies table (이슈 답변)
+export const taskIssueReplies = pgTable('task_issue_replies', {
+  id: serial('id').primaryKey(),
+  issueId: integer('issue_id').notNull(),
+  userId: integer('user_id').notNull(),
+  content: text('content').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+export type TaskIssueReply = typeof taskIssueReplies.$inferSelect;
+export type NewTaskIssueReply = typeof taskIssueReplies.$inferInsert;

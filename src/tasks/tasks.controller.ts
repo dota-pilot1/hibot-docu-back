@@ -15,6 +15,8 @@ import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto, UpdateTaskStatusDto } from './dto/update-task.dto';
 import { CreateTaskIssueDto } from './dto/create-task-issue.dto';
 import { UpdateTaskIssueDto } from './dto/update-task-issue.dto';
+import { CreateIssueReplyDto } from './dto/create-issue-reply.dto';
+import { UpdateIssueReplyDto } from './dto/update-issue-reply.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 @Controller('tasks')
@@ -129,6 +131,37 @@ export class TasksController {
   @Patch('issues/:issueId/resolve')
   resolveTaskIssue(@Param('issueId', ParseIntPipe) issueId: number) {
     return this.tasksService.resolveTaskIssue(issueId);
+  }
+
+  // ============================================
+  // Issue Replies (이슈 답변)
+  // ============================================
+
+  @Get('issues/:issueId/replies')
+  getIssueReplies(@Param('issueId', ParseIntPipe) issueId: number) {
+    return this.tasksService.getIssueReplies(issueId);
+  }
+
+  @Post('issues/:issueId/replies')
+  createIssueReply(
+    @Param('issueId', ParseIntPipe) issueId: number,
+    @Body() dto: CreateIssueReplyDto,
+    @Req() req: any,
+  ) {
+    return this.tasksService.createIssueReply(issueId, req.user.userId, dto);
+  }
+
+  @Patch('issues/replies/:replyId')
+  updateIssueReply(
+    @Param('replyId', ParseIntPipe) replyId: number,
+    @Body() dto: UpdateIssueReplyDto,
+  ) {
+    return this.tasksService.updateIssueReply(replyId, dto);
+  }
+
+  @Delete('issues/replies/:replyId')
+  deleteIssueReply(@Param('replyId', ParseIntPipe) replyId: number) {
+    return this.tasksService.deleteIssueReply(replyId);
   }
 }
 
