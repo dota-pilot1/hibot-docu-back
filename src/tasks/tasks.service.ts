@@ -25,16 +25,39 @@ import { UpdateIssueReplyDto } from './dto/update-issue-reply.dto';
 @Injectable()
 export class TasksService {
   // Task CRUD
-  async findAll(): Promise<Task[]> {
-    return db.select().from(tasks).orderBy(desc(tasks.createdAt));
+  async findAll(): Promise<(Task & { issueCount: number })[]> {
+    const result = await db
+      .select({
+        task: tasks,
+        issueCount: sql<number>`(
+          SELECT COUNT(*)::int FROM task_issues WHERE task_issues.task_id = ${tasks.id}
+        )`,
+      })
+      .from(tasks)
+      .orderBy(desc(tasks.createdAt));
+
+    return result.map((row) => ({
+      ...row.task,
+      issueCount: row.issueCount,
+    }));
   }
 
-  async findByUser(userId: number): Promise<Task[]> {
-    return db
-      .select()
+  async findByUser(userId: number): Promise<(Task & { issueCount: number })[]> {
+    const result = await db
+      .select({
+        task: tasks,
+        issueCount: sql<number>`(
+          SELECT COUNT(*)::int FROM task_issues WHERE task_issues.task_id = ${tasks.id}
+        )`,
+      })
       .from(tasks)
       .where(eq(tasks.assigneeId, userId))
       .orderBy(desc(tasks.createdAt));
+
+    return result.map((row) => ({
+      ...row.task,
+      issueCount: row.issueCount,
+    }));
   }
 
   async findOne(id: number): Promise<Task> {
