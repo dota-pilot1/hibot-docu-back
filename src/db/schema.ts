@@ -546,3 +546,74 @@ export const taskDetailAttachments = pgTable('task_detail_attachments', {
 
 export type TaskDetailAttachment = typeof taskDetailAttachments.$inferSelect;
 export type NewTaskDetailAttachment = typeof taskDetailAttachments.$inferInsert;
+
+// ============================================
+// Pilot Management (파일럿 프로젝트 관리)
+// ============================================
+
+// Pilot type enum
+export const pilotTypeEnum = pgEnum('pilot_type', [
+  'ROOT',
+  'NOTE',
+  'MERMAID',
+  'QA',
+  'FILE',
+]);
+
+// Pilot categories table (파일럿 프로젝트 카테고리)
+export const pilotCategories = pgTable('pilot_categories', {
+  id: serial('id').primaryKey(),
+  userId: integer('user_id').notNull(),
+  name: varchar('name', { length: 255 }).notNull(),
+  pilotType: pilotTypeEnum('pilot_type').default('NOTE').notNull(),
+  projectType: varchar('project_type', { length: 50 }),
+  description: text('description'),
+  parentId: integer('parent_id'),
+  displayOrder: integer('display_order').default(0).notNull(),
+  depth: integer('depth').default(0).notNull(),
+  icon: varchar('icon', { length: 100 }),
+  isActive: boolean('is_active').default(true).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+export type PilotCategory = typeof pilotCategories.$inferSelect;
+export type NewPilotCategory = typeof pilotCategories.$inferInsert;
+
+// Pilot contents table (파일럿 프로젝트 컨텐츠)
+export const pilotContents = pgTable('pilot_contents', {
+  id: serial('id').primaryKey(),
+  categoryId: integer('category_id').notNull(),
+  userId: integer('user_id').notNull(),
+  title: varchar('title', { length: 255 }).notNull(),
+  content: text('content'),
+  contentType: contentTypeEnum('content_type').default('NOTE').notNull(),
+  metadata: jsonb('metadata'),
+  displayOrder: integer('display_order').default(0).notNull(),
+  isActive: boolean('is_active').default(true).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+export type PilotContent = typeof pilotContents.$inferSelect;
+export type NewPilotContent = typeof pilotContents.$inferInsert;
+
+// Pilot category files table (파일럿 프로젝트 파일)
+export const pilotCategoryFiles = pgTable('pilot_category_files', {
+  id: serial('id').primaryKey(),
+  categoryId: integer('category_id').notNull(),
+  userId: integer('user_id').notNull(),
+  originalName: varchar('original_name', { length: 255 }).notNull(),
+  storedName: varchar('stored_name', { length: 255 }).notNull(),
+  s3Url: text('s3_url').notNull(),
+  filePath: text('file_path').notNull(),
+  fileSize: integer('file_size').notNull(),
+  mimeType: varchar('mime_type', { length: 100 }).notNull(),
+  fileType: fileTypeEnum('file_type').default('OTHER').notNull(),
+  displayOrder: integer('display_order').default(0).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+});
+
+export type PilotCategoryFile = typeof pilotCategoryFiles.$inferSelect;
+export type NewPilotCategoryFile = typeof pilotCategoryFiles.$inferInsert;

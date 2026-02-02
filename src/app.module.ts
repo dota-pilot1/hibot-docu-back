@@ -16,6 +16,7 @@ import { ChatProjectsModule } from './chat-projects/chat-projects.module';
 import { ChatTeamsModule } from './chat-teams/chat-teams.module';
 import { ChatRoomsModule } from './chat-rooms/chat-rooms.module';
 import { TasksModule } from './tasks/tasks.module';
+import { PilotsModule } from './pilots/pilots.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { TasksModule } from './tasks/tasks.module';
     UsersModule,
     AuthModule,
     ArchitecturesModule,
+    PilotsModule,
     CommonModule,
     AiModule,
     PostsModule,
