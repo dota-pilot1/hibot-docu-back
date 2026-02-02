@@ -84,7 +84,7 @@ export class TasksService {
         description: dto.description,
         status: dto.status || 'pending',
         priority: dto.priority || 'medium',
-        assigneeId: dto.assigneeId,
+        assigneeId: dto.assigneeId || null,
         dueDate: dto.dueDate ? new Date(dto.dueDate) : null,
       })
       .returning();
@@ -200,10 +200,12 @@ export class TasksService {
     const task = await this.findOne(taskId);
 
     // 해당 유저의 다른 모든 Task의 isCurrent를 false로
-    await db
-      .update(tasks)
-      .set({ isCurrent: false })
-      .where(eq(tasks.assigneeId, task.assigneeId));
+    if (task.assigneeId) {
+      await db
+        .update(tasks)
+        .set({ isCurrent: false })
+        .where(eq(tasks.assigneeId, task.assigneeId));
+    }
 
     // 선택한 Task만 isCurrent를 true로
     const result = await db

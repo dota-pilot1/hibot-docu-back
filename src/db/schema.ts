@@ -377,7 +377,7 @@ export const tasks = pgTable('tasks', {
   description: text('description'),
   status: taskStatusEnum('status').default('pending').notNull(),
   priority: taskPriorityEnum('priority').default('medium').notNull(),
-  assigneeId: integer('assignee_id').notNull(),
+  assigneeId: integer('assignee_id'),
   isCurrent: boolean('is_current').default(false).notNull(),
   dueDate: timestamp('due_date'),
   startedAt: timestamp('started_at'),

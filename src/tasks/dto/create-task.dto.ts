@@ -22,8 +22,9 @@ export class CreateTaskDto {
   @IsEnum(['low', 'medium', 'high'])
   priority?: 'low' | 'medium' | 'high';
 
+  @IsOptional()
   @IsInt()
-  assigneeId: number;
+  assigneeId?: number;
 
   @IsOptional()
   @IsDateString()
