@@ -20,6 +20,7 @@ import { PilotsModule } from './pilots/pilots.module';
 import { ReviewsModule } from './reviews/reviews.module';
 import { DbAdminModule } from './db-admin/db-admin.module';
 import { FavoritesModule } from './favorites/favorites.module';
+import { SkillsModule } from './skills/skills.module';
 
 @Module({
   imports: [
@@ -44,6 +45,7 @@ import { FavoritesModule } from './favorites/favorites.module';
     ChatTeamsModule,
     ChatRoomsModule,
     TasksModule,
+    SkillsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

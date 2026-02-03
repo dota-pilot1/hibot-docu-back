@@ -828,3 +828,79 @@ export const favoriteCategoryFiles = pgTable('favorite_category_files', {
 
 export type FavoriteCategoryFile = typeof favoriteCategoryFiles.$inferSelect;
 export type NewFavoriteCategoryFile = typeof favoriteCategoryFiles.$inferInsert;
+
+// ============================================
+// Skill Tree Management (스킬 트리 관리)
+// ============================================
+
+// Skill categories table (스킬 카테고리)
+export const skillCategories = pgTable('skill_categories', {
+  id: serial('id').primaryKey(),
+  name: varchar('name', { length: 100 }).notNull(),
+  description: text('description'),
+  displayOrder: integer('display_order').default(0).notNull(),
+  iconUrl: text('icon_url'),
+  color: varchar('color', { length: 20 }), // 예: "#4F46E5"
+  isActive: boolean('is_active').default(true).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+export type SkillCategory = typeof skillCategories.$inferSelect;
+export type NewSkillCategory = typeof skillCategories.$inferInsert;
+
+// Skills table (스킬 정의)
+export const skills = pgTable('skills', {
+  id: serial('id').primaryKey(),
+  categoryId: integer('category_id'),
+  parentId: integer('parent_id'), // 선행 스킬 (트리 구조)
+  name: varchar('name', { length: 100 }).notNull(),
+  description: text('description'),
+  displayOrder: integer('display_order').default(0).notNull(),
+  maxLevel: integer('max_level').default(5).notNull(),
+  iconUrl: text('icon_url'),
+  metadata: jsonb('metadata').default(sql`'{}'::jsonb`), // { tags, resources, examples }
+  isActive: boolean('is_active').default(true).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+export type Skill = typeof skills.$inferSelect;
+export type NewSkill = typeof skills.$inferInsert;
+
+// User skills table (사용자별 스킬 레벨)
+export const userSkills = pgTable('user_skills', {
+  id: serial('id').primaryKey(),
+  userId: integer('user_id').notNull(),
+  skillId: integer('skill_id').notNull(),
+  level: integer('level').default(0).notNull(), // 0-5
+  notes: text('notes'), // 개인 메모
+  startedAt: timestamp('started_at'),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+export type UserSkill = typeof userSkills.$inferSelect;
+export type NewUserSkill = typeof userSkills.$inferInsert;
+
+// Skill activity type enum
+export const skillActivityTypeEnum = pgEnum('skill_activity_type', [
+  'level_up',
+  'level_down',
+  'started',
+  'note_updated',
+]);
+
+// Skill activities table (스킬 활동 로그)
+export const skillActivities = pgTable('skill_activities', {
+  id: serial('id').primaryKey(),
+  userId: integer('user_id').notNull(),
+  skillId: integer('skill_id').notNull(),
+  type: skillActivityTypeEnum('type').notNull(),
+  previousLevel: integer('previous_level'),
+  newLevel: integer('new_level'),
+  description: text('description'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+export type SkillActivity = typeof skillActivities.$inferSelect;
+export type NewSkillActivity = typeof skillActivities.$inferInsert;
