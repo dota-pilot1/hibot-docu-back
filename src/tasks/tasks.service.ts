@@ -21,9 +21,11 @@ import { CreateTaskIssueDto } from './dto/create-task-issue.dto';
 import { UpdateTaskIssueDto } from './dto/update-task-issue.dto';
 import { CreateIssueReplyDto } from './dto/create-issue-reply.dto';
 import { UpdateIssueReplyDto } from './dto/update-issue-reply.dto';
+import { TasksGateway } from './tasks.gateway';
 
 @Injectable()
 export class TasksService {
+  constructor(private readonly tasksGateway: TasksGateway) {}
   // Task CRUD
   async findAll(): Promise<(Task & { issueCount: number })[]> {
     const result = await db
@@ -98,6 +100,25 @@ export class TasksService {
       'created',
       `Task 생성: ${task.title}`,
     );
+
+    // 사용자 정보 조회
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1);
+
+    // Socket.IO 브로드캐스트
+    this.tasksGateway.broadcastTaskCreated({
+      taskId: task.id,
+      title: task.title,
+      status: task.status as any,
+      previousStatus: '',
+      updatedBy: user?.email || 'Unknown',
+      updatedByName: user?.name || 'Unknown',
+      updatedAt: task.createdAt.toISOString(),
+      assigneeId: task.assigneeId || undefined,
+    });
 
     return task;
   }
@@ -186,6 +207,25 @@ export class TasksService {
       `상태 변경: ${statusLabels[existing.status]} → ${statusLabels[dto.status]}`,
     );
 
+    // 사용자 정보 조회
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1);
+
+    // Socket.IO 브로드캐스트
+    this.tasksGateway.broadcastTaskUpdate({
+      taskId: result[0].id,
+      title: result[0].title,
+      status: result[0].status as any,
+      previousStatus: existing.status,
+      updatedBy: user?.email || 'Unknown',
+      updatedByName: user?.name || 'Unknown',
+      updatedAt: result[0].updatedAt.toISOString(),
+      assigneeId: result[0].assigneeId || undefined,
+    });
+
     return result[0];
   }
 
@@ -193,6 +233,9 @@ export class TasksService {
     await this.findOne(id); // 존재 확인
     await db.delete(taskActivities).where(eq(taskActivities.taskId, id));
     await db.delete(tasks).where(eq(tasks.id, id));
+
+    // Socket.IO 브로드캐스트
+    this.tasksGateway.broadcastTaskDeleted(id);
   }
 
   // 현재 작업 설정 (한 유저당 하나만)
