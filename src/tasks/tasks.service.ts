@@ -163,6 +163,26 @@ export class TasksService {
       `Task 수정: ${result[0].title}`,
     );
 
+    // 상태가 변경된 경우 Socket.IO 브로드캐스트
+    if (dto.status && dto.status !== existing.status) {
+      const [user] = await db
+        .select()
+        .from(users)
+        .where(eq(users.id, userId))
+        .limit(1);
+
+      this.tasksGateway.broadcastTaskUpdate({
+        taskId: result[0].id,
+        title: result[0].title,
+        status: result[0].status as any,
+        previousStatus: existing.status,
+        updatedBy: user?.email || 'Unknown',
+        updatedByName: user?.name || 'Unknown',
+        updatedAt: result[0].updatedAt.toISOString(),
+        assigneeId: result[0].assigneeId || undefined,
+      });
+    }
+
     return result[0];
   }
 
