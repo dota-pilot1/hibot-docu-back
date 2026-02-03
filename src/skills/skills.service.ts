@@ -1,84 +1,18 @@
 import { Injectable } from '@nestjs/common';
 import { db } from '../db/client';
 import {
-  skillCategories,
   skills,
   userSkills,
   skillActivities,
   users,
   Skill,
-  SkillCategory,
   UserSkill,
 } from '../db/schema';
 import { eq, desc, asc, and } from 'drizzle-orm';
-import {
-  CreateSkillCategoryDto,
-  UpdateSkillCategoryDto,
-  CreateSkillDto,
-  UpdateSkillDto,
-  UpdateUserSkillDto,
-} from './dto';
+import { CreateSkillDto, UpdateSkillDto, UpdateUserSkillDto } from './dto';
 
 @Injectable()
 export class SkillsService {
-  // ============================================
-  // Skill Categories
-  // ============================================
-
-  async findAllCategories(): Promise<SkillCategory[]> {
-    return db
-      .select()
-      .from(skillCategories)
-      .where(eq(skillCategories.isActive, true))
-      .orderBy(asc(skillCategories.displayOrder));
-  }
-
-  async findCategoryById(id: number): Promise<SkillCategory | undefined> {
-    const [category] = await db
-      .select()
-      .from(skillCategories)
-      .where(eq(skillCategories.id, id));
-    return category;
-  }
-
-  async createCategory(dto: CreateSkillCategoryDto): Promise<SkillCategory> {
-    const [category] = await db
-      .insert(skillCategories)
-      .values({
-        name: dto.name,
-        description: dto.description,
-        displayOrder: dto.displayOrder ?? 0,
-        iconUrl: dto.iconUrl,
-        color: dto.color,
-      })
-      .returning();
-    return category;
-  }
-
-  async updateCategory(
-    id: number,
-    dto: UpdateSkillCategoryDto,
-  ): Promise<SkillCategory> {
-    const [category] = await db
-      .update(skillCategories)
-      .set({
-        ...dto,
-        updatedAt: new Date(),
-      })
-      .where(eq(skillCategories.id, id))
-      .returning();
-    return category;
-  }
-
-  async deleteCategory(id: number): Promise<SkillCategory> {
-    const [category] = await db
-      .update(skillCategories)
-      .set({ isActive: false, updatedAt: new Date() })
-      .where(eq(skillCategories.id, id))
-      .returning();
-    return category;
-  }
-
   // ============================================
   // Skills
   // ============================================
@@ -88,14 +22,6 @@ export class SkillsService {
       .select()
       .from(skills)
       .where(eq(skills.isActive, true))
-      .orderBy(asc(skills.categoryId), asc(skills.displayOrder));
-  }
-
-  async findSkillsByCategory(categoryId: number): Promise<Skill[]> {
-    return db
-      .select()
-      .from(skills)
-      .where(and(eq(skills.categoryId, categoryId), eq(skills.isActive, true)))
       .orderBy(asc(skills.displayOrder));
   }
 
@@ -109,7 +35,6 @@ export class SkillsService {
       .insert(skills)
       .values({
         name: dto.name,
-        categoryId: dto.categoryId,
         parentId: dto.parentId,
         description: dto.description,
         displayOrder: dto.displayOrder ?? 0,
@@ -168,7 +93,6 @@ export class SkillsService {
         skill: {
           id: skills.id,
           name: skills.name,
-          categoryId: skills.categoryId,
           parentId: skills.parentId,
           description: skills.description,
           maxLevel: skills.maxLevel,
@@ -179,7 +103,7 @@ export class SkillsService {
       .from(userSkills)
       .leftJoin(skills, eq(userSkills.skillId, skills.id))
       .where(eq(userSkills.userId, userId))
-      .orderBy(asc(skills.categoryId), asc(skills.displayOrder));
+      .orderBy(asc(skills.displayOrder));
   }
 
   async findUserSkillBySkillId(
@@ -369,35 +293,20 @@ export class SkillsService {
   }
 
   // ============================================
-  // Full Skill Tree with Categories
+  // Skill List with User Levels
   // ============================================
 
-  async getSkillTree() {
-    const categories = await this.findAllCategories();
+  async getSkillsWithUserLevels(userId: number) {
     const allSkills = await this.findAllSkills();
-
-    return categories.map((category: SkillCategory) => ({
-      ...category,
-      skills: allSkills.filter(
-        (skill: Skill) => skill.categoryId === category.id,
-      ),
-    }));
-  }
-
-  async getSkillTreeWithUserLevels(userId: number) {
-    const tree = await this.getSkillTree();
     const userSkillsList = await this.findUserSkills(userId);
 
     const userSkillMap = new Map(
       userSkillsList.map((us: { skillId: number }) => [us.skillId, us]),
     );
 
-    return tree.map((category: SkillCategory & { skills: Skill[] }) => ({
-      ...category,
-      skills: category.skills.map((skill: Skill) => ({
-        ...skill,
-        userSkill: userSkillMap.get(skill.id) || null,
-      })),
+    return allSkills.map((skill: Skill) => ({
+      ...skill,
+      userSkill: userSkillMap.get(skill.id) || null,
     }));
   }
 }
