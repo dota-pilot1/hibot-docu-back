@@ -10,7 +10,13 @@ import {
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { SkillsService } from './skills.service';
-import { CreateSkillDto, UpdateSkillDto, UpdateUserSkillDto } from './dto';
+import {
+  CreateSkillDto,
+  UpdateSkillDto,
+  UpdateUserSkillDto,
+  CreateSkillCategoryDto,
+  UpdateSkillCategoryDto,
+} from './dto';
 
 interface AuthRequest extends Request {
   user: { userId: number; email: string };
@@ -20,6 +26,38 @@ interface AuthRequest extends Request {
 @UseGuards(JwtAuthGuard)
 export class SkillsController {
   constructor(private readonly skillsService: SkillsService) {}
+
+  // ============================================
+  // Skill Categories
+  // ============================================
+
+  @Get('categories')
+  async findAllCategories() {
+    return this.skillsService.findAllCategories();
+  }
+
+  @Get('categories/:id')
+  async findCategoryById(@Param('id') id: string) {
+    return this.skillsService.findCategoryById(+id);
+  }
+
+  @Post('categories')
+  async createCategory(@Body() dto: CreateSkillCategoryDto) {
+    return this.skillsService.createCategory(dto);
+  }
+
+  @Patch('categories/:id')
+  async updateCategory(
+    @Param('id') id: string,
+    @Body() dto: UpdateSkillCategoryDto,
+  ) {
+    return this.skillsService.updateCategory(+id, dto);
+  }
+
+  @Delete('categories/:id')
+  async deleteCategory(@Param('id') id: string) {
+    return this.skillsService.deleteCategory(+id);
+  }
 
   // ============================================
   // Skills

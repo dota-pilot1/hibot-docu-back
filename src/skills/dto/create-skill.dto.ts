@@ -6,6 +6,10 @@ export class CreateSkillDto {
 
   @IsOptional()
   @IsNumber()
+  categoryId?: number;
+
+  @IsOptional()
+  @IsNumber()
   parentId?: number;
 
   @IsOptional()

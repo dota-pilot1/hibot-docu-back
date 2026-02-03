@@ -4,15 +4,81 @@ import {
   skills,
   userSkills,
   skillActivities,
+  skillCategories,
   users,
   Skill,
   UserSkill,
+  SkillCategory,
 } from '../db/schema';
-import { eq, desc, asc, and } from 'drizzle-orm';
-import { CreateSkillDto, UpdateSkillDto, UpdateUserSkillDto } from './dto';
+import { eq, desc, asc, and, isNull } from 'drizzle-orm';
+import {
+  CreateSkillDto,
+  UpdateSkillDto,
+  UpdateUserSkillDto,
+  CreateSkillCategoryDto,
+  UpdateSkillCategoryDto,
+} from './dto';
 
 @Injectable()
 export class SkillsService {
+  // ============================================
+  // Skill Categories
+  // ============================================
+
+  async findAllCategories(): Promise<SkillCategory[]> {
+    return db
+      .select()
+      .from(skillCategories)
+      .where(eq(skillCategories.isActive, true))
+      .orderBy(asc(skillCategories.displayOrder));
+  }
+
+  async findCategoryById(id: number): Promise<SkillCategory | undefined> {
+    const [category] = await db
+      .select()
+      .from(skillCategories)
+      .where(eq(skillCategories.id, id));
+    return category;
+  }
+
+  async createCategory(dto: CreateSkillCategoryDto): Promise<SkillCategory> {
+    const [category] = await db
+      .insert(skillCategories)
+      .values({
+        name: dto.name,
+        description: dto.description,
+        displayOrder: dto.displayOrder ?? 0,
+        iconUrl: dto.iconUrl,
+        color: dto.color,
+      })
+      .returning();
+    return category;
+  }
+
+  async updateCategory(
+    id: number,
+    dto: UpdateSkillCategoryDto,
+  ): Promise<SkillCategory> {
+    const [category] = await db
+      .update(skillCategories)
+      .set({
+        ...dto,
+        updatedAt: new Date(),
+      })
+      .where(eq(skillCategories.id, id))
+      .returning();
+    return category;
+  }
+
+  async deleteCategory(id: number): Promise<SkillCategory> {
+    const [category] = await db
+      .update(skillCategories)
+      .set({ isActive: false, updatedAt: new Date() })
+      .where(eq(skillCategories.id, id))
+      .returning();
+    return category;
+  }
+
   // ============================================
   // Skills
   // ============================================
@@ -35,6 +101,7 @@ export class SkillsService {
       .insert(skills)
       .values({
         name: dto.name,
+        categoryId: dto.categoryId,
         parentId: dto.parentId,
         description: dto.description,
         displayOrder: dto.displayOrder ?? 0,
