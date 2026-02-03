@@ -159,6 +159,82 @@ export type NewNoteContent = typeof noteContents.$inferInsert;
 export type NoteCategoryFile = typeof noteCategoryFiles.$inferSelect;
 export type NewNoteCategoryFile = typeof noteCategoryFiles.$inferInsert;
 
+// ============================================
+// Design System (디자인 시스템)
+// ============================================
+
+export const designSystemTypeEnum = pgEnum('design_system_type', [
+  'ROOT',
+  'NOTE',
+  'MERMAID',
+  'QA',
+  'FILE',
+  'GITHUB',
+  'FAQ',
+  'MEMBER',
+]);
+
+export const designSystemCategories = pgTable('design_system_categories', {
+  id: serial('id').primaryKey(),
+  userId: integer('user_id').notNull(),
+  name: varchar('name', { length: 255 }).notNull(),
+  designSystemType: designSystemTypeEnum('design_system_type')
+    .default('NOTE')
+    .notNull(),
+  techType: varchar('tech_type', { length: 50 }),
+  description: text('description'),
+  parentId: integer('parent_id'),
+  displayOrder: integer('display_order').default(0).notNull(),
+  depth: integer('depth').default(0).notNull(),
+  icon: varchar('icon', { length: 100 }),
+  isActive: boolean('is_active').default(true).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+export const designSystemContents = pgTable('design_system_contents', {
+  id: serial('id').primaryKey(),
+  categoryId: integer('category_id').notNull(),
+  userId: integer('user_id').notNull(),
+  title: varchar('title', { length: 255 }).notNull(),
+  content: text('content'),
+  contentType: contentTypeEnum('content_type').default('NOTE').notNull(),
+  metadata: jsonb('metadata'),
+  displayOrder: integer('display_order').default(0).notNull(),
+  isActive: boolean('is_active').default(true).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+export const designSystemCategoryFiles = pgTable(
+  'design_system_category_files',
+  {
+    id: serial('id').primaryKey(),
+    categoryId: integer('category_id').notNull(),
+    userId: integer('user_id').notNull(),
+    originalName: varchar('original_name', { length: 255 }).notNull(),
+    storedName: varchar('stored_name', { length: 255 }).notNull(),
+    s3Url: text('s3_url').notNull(),
+    filePath: text('file_path').notNull(),
+    fileSize: integer('file_size').notNull(),
+    mimeType: varchar('mime_type', { length: 100 }).notNull(),
+    fileType: fileTypeEnum('file_type').default('OTHER').notNull(),
+    displayOrder: integer('display_order').default(0).notNull(),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow(),
+  },
+);
+
+export type DesignSystemCategory = typeof designSystemCategories.$inferSelect;
+export type NewDesignSystemCategory =
+  typeof designSystemCategories.$inferInsert;
+export type DesignSystemContent = typeof designSystemContents.$inferSelect;
+export type NewDesignSystemContent = typeof designSystemContents.$inferInsert;
+export type DesignSystemCategoryFile =
+  typeof designSystemCategoryFiles.$inferSelect;
+export type NewDesignSystemCategoryFile =
+  typeof designSystemCategoryFiles.$inferInsert;
+
 // Departments table (부서/조직도)
 export const departments = pgTable('departments', {
   id: serial('id').primaryKey(),

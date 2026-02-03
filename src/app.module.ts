@@ -5,6 +5,7 @@ import { AppService } from './app.service';
 import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
 import { ArchitecturesModule } from './architectures/architectures.module';
+import { DesignSystemsModule } from './design-systems/design-systems.module';
 import { CommonModule } from './common/common.module';
 import { AiModule } from './ai/ai.module';
 import { PostsModule } from './posts/posts.module';
@@ -35,6 +36,7 @@ import { JournalsModule } from './journals/journals.module';
     UsersModule,
     AuthModule,
     ArchitecturesModule,
+    DesignSystemsModule,
     PilotsModule,
     ReviewsModule,
     DbAdminModule,
