@@ -1,11 +1,14 @@
 import { Injectable } from '@nestjs/common';
-import { db } from '../db';
+import { db } from '../db/client';
 import {
   skillCategories,
   skills,
   userSkills,
   skillActivities,
   users,
+  Skill,
+  SkillCategory,
+  UserSkill,
 } from '../db/schema';
 import { eq, desc, asc, and } from 'drizzle-orm';
 import {
@@ -22,7 +25,7 @@ export class SkillsService {
   // Skill Categories
   // ============================================
 
-  async findAllCategories() {
+  async findAllCategories(): Promise<SkillCategory[]> {
     return db
       .select()
       .from(skillCategories)
@@ -30,7 +33,7 @@ export class SkillsService {
       .orderBy(asc(skillCategories.displayOrder));
   }
 
-  async findCategoryById(id: number) {
+  async findCategoryById(id: number): Promise<SkillCategory | undefined> {
     const [category] = await db
       .select()
       .from(skillCategories)
@@ -38,7 +41,7 @@ export class SkillsService {
     return category;
   }
 
-  async createCategory(dto: CreateSkillCategoryDto) {
+  async createCategory(dto: CreateSkillCategoryDto): Promise<SkillCategory> {
     const [category] = await db
       .insert(skillCategories)
       .values({
@@ -52,7 +55,10 @@ export class SkillsService {
     return category;
   }
 
-  async updateCategory(id: number, dto: UpdateSkillCategoryDto) {
+  async updateCategory(
+    id: number,
+    dto: UpdateSkillCategoryDto,
+  ): Promise<SkillCategory> {
     const [category] = await db
       .update(skillCategories)
       .set({
@@ -64,7 +70,7 @@ export class SkillsService {
     return category;
   }
 
-  async deleteCategory(id: number) {
+  async deleteCategory(id: number): Promise<SkillCategory> {
     const [category] = await db
       .update(skillCategories)
       .set({ isActive: false, updatedAt: new Date() })
@@ -77,7 +83,7 @@ export class SkillsService {
   // Skills
   // ============================================
 
-  async findAllSkills() {
+  async findAllSkills(): Promise<Skill[]> {
     return db
       .select()
       .from(skills)
@@ -85,7 +91,7 @@ export class SkillsService {
       .orderBy(asc(skills.categoryId), asc(skills.displayOrder));
   }
 
-  async findSkillsByCategory(categoryId: number) {
+  async findSkillsByCategory(categoryId: number): Promise<Skill[]> {
     return db
       .select()
       .from(skills)
@@ -93,12 +99,12 @@ export class SkillsService {
       .orderBy(asc(skills.displayOrder));
   }
 
-  async findSkillById(id: number) {
+  async findSkillById(id: number): Promise<Skill | undefined> {
     const [skill] = await db.select().from(skills).where(eq(skills.id, id));
     return skill;
   }
 
-  async createSkill(dto: CreateSkillDto) {
+  async createSkill(dto: CreateSkillDto): Promise<Skill> {
     const [skill] = await db
       .insert(skills)
       .values({
@@ -115,7 +121,7 @@ export class SkillsService {
     return skill;
   }
 
-  async updateSkill(id: number, dto: UpdateSkillDto) {
+  async updateSkill(id: number, dto: UpdateSkillDto): Promise<Skill> {
     const [skill] = await db
       .update(skills)
       .set({
@@ -127,7 +133,7 @@ export class SkillsService {
     return skill;
   }
 
-  async deleteSkill(id: number) {
+  async deleteSkill(id: number): Promise<Skill> {
     const [skill] = await db
       .update(skills)
       .set({ isActive: false, updatedAt: new Date() })
@@ -136,7 +142,7 @@ export class SkillsService {
     return skill;
   }
 
-  async updateSkillOrder(id: number, displayOrder: number) {
+  async updateSkillOrder(id: number, displayOrder: number): Promise<Skill> {
     const [skill] = await db
       .update(skills)
       .set({ displayOrder, updatedAt: new Date() })
@@ -176,7 +182,10 @@ export class SkillsService {
       .orderBy(asc(skills.categoryId), asc(skills.displayOrder));
   }
 
-  async findUserSkillBySkillId(userId: number, skillId: number) {
+  async findUserSkillBySkillId(
+    userId: number,
+    skillId: number,
+  ): Promise<UserSkill | undefined> {
     const [userSkill] = await db
       .select()
       .from(userSkills)
@@ -186,7 +195,11 @@ export class SkillsService {
     return userSkill;
   }
 
-  async updateUserSkill(userId: number, skillId: number, dto: UpdateUserSkillDto) {
+  async updateUserSkill(
+    userId: number,
+    skillId: number,
+    dto: UpdateUserSkillDto,
+  ): Promise<UserSkill> {
     // 기존 레코드 확인
     const existing = await this.findUserSkillBySkillId(userId, skillId);
 
@@ -217,7 +230,13 @@ export class SkillsService {
       return userSkill;
     } else {
       // 새로 생성
-      await this.createSkillActivity(userId, skillId, 'started', null, dto.level);
+      await this.createSkillActivity(
+        userId,
+        skillId,
+        'started',
+        null,
+        dto.level,
+      );
 
       const [userSkill] = await db
         .insert(userSkills)
@@ -310,7 +329,7 @@ export class SkillsService {
       .from(users)
       .where(eq(users.departmentId, departmentId));
 
-    const userIds = departmentUsers.map((u) => u.id);
+    const userIds: number[] = departmentUsers.map((u: { id: number }) => u.id);
 
     if (userIds.length === 0) {
       return [];
@@ -321,19 +340,21 @@ export class SkillsService {
 
     // 각 스킬별 평균 레벨 계산
     const summaries = await Promise.all(
-      allSkills.map(async (skill) => {
+      allSkills.map(async (skill: Skill) => {
         const skillLevels = await db
           .select({ level: userSkills.level })
           .from(userSkills)
           .where(eq(userSkills.skillId, skill.id));
 
-        const userLevels = skillLevels.filter((sl) =>
+        const userLevels = skillLevels.filter((sl: { level: number }) =>
           userIds.includes(sl.level),
         );
         const avgLevel =
           userLevels.length > 0
-            ? userLevels.reduce((sum, sl) => sum + sl.level, 0) /
-              userLevels.length
+            ? userLevels.reduce(
+                (sum: number, sl: { level: number }) => sum + sl.level,
+                0,
+              ) / userLevels.length
             : 0;
 
         return {
@@ -344,7 +365,7 @@ export class SkillsService {
       }),
     );
 
-    return summaries.filter((s) => s.userCount > 0);
+    return summaries.filter((s: { userCount: number }) => s.userCount > 0);
   }
 
   // ============================================
@@ -355,9 +376,11 @@ export class SkillsService {
     const categories = await this.findAllCategories();
     const allSkills = await this.findAllSkills();
 
-    return categories.map((category) => ({
+    return categories.map((category: SkillCategory) => ({
       ...category,
-      skills: allSkills.filter((skill) => skill.categoryId === category.id),
+      skills: allSkills.filter(
+        (skill: Skill) => skill.categoryId === category.id,
+      ),
     }));
   }
 
@@ -366,12 +389,12 @@ export class SkillsService {
     const userSkillsList = await this.findUserSkills(userId);
 
     const userSkillMap = new Map(
-      userSkillsList.map((us) => [us.skillId, us]),
+      userSkillsList.map((us: { skillId: number }) => [us.skillId, us]),
     );
 
-    return tree.map((category) => ({
+    return tree.map((category: SkillCategory & { skills: Skill[] }) => ({
       ...category,
-      skills: category.skills.map((skill) => ({
+      skills: category.skills.map((skill: Skill) => ({
         ...skill,
         userSkill: userSkillMap.get(skill.id) || null,
       })),
