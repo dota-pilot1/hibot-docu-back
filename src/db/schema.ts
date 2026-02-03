@@ -1084,3 +1084,67 @@ export const skillActivities = pgTable('skill_activities', {
 
 export type SkillActivity = typeof skillActivities.$inferSelect;
 export type NewSkillActivity = typeof skillActivities.$inferInsert;
+
+// ============================================
+// Journal Management (일지 관리)
+// ============================================
+
+// Journal type enum (개발일지/학습일지)
+export const journalTypeEnum = pgEnum('journal_type', ['DEV', 'STUDY']);
+
+// Journal categories table (일지 카테고리)
+export const journalCategories = pgTable('journal_categories', {
+  id: serial('id').primaryKey(),
+  userId: integer('user_id').notNull(),
+  name: varchar('name', { length: 255 }).notNull(),
+  journalType: journalTypeEnum('journal_type').default('DEV').notNull(),
+  description: text('description'),
+  parentId: integer('parent_id'),
+  displayOrder: integer('display_order').default(0).notNull(),
+  depth: integer('depth').default(0).notNull(),
+  icon: varchar('icon', { length: 100 }),
+  isActive: boolean('is_active').default(true).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+export type JournalCategory = typeof journalCategories.$inferSelect;
+export type NewJournalCategory = typeof journalCategories.$inferInsert;
+
+// Journals table (일지)
+export const journals = pgTable('journals', {
+  id: serial('id').primaryKey(),
+  categoryId: integer('category_id').notNull(),
+  userId: integer('user_id').notNull(),
+  title: varchar('title', { length: 500 }).notNull(),
+  content: text('content'), // Lexical JSON
+  journalDate: timestamp('journal_date').defaultNow().notNull(), // 일지 날짜
+  tags: jsonb('tags').default(sql`'[]'::jsonb`), // 태그 배열
+  metadata: jsonb('metadata').default(sql`'{}'::jsonb`), // 추가 정보
+  displayOrder: integer('display_order').default(0).notNull(),
+  isActive: boolean('is_active').default(true).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+export type Journal = typeof journals.$inferSelect;
+export type NewJournal = typeof journals.$inferInsert;
+
+// Journal attachments table (일지 첨부파일)
+export const journalAttachments = pgTable('journal_attachments', {
+  id: serial('id').primaryKey(),
+  journalId: integer('journal_id').notNull(),
+  userId: integer('user_id').notNull(),
+  originalName: varchar('original_name', { length: 255 }).notNull(),
+  storedName: varchar('stored_name', { length: 255 }).notNull(),
+  s3Url: text('s3_url').notNull(),
+  filePath: text('file_path').notNull(),
+  fileSize: integer('file_size').notNull(),
+  mimeType: varchar('mime_type', { length: 100 }).notNull(),
+  fileType: fileTypeEnum('file_type').default('OTHER').notNull(),
+  displayOrder: integer('display_order').default(0).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+export type JournalAttachment = typeof journalAttachments.$inferSelect;
+export type NewJournalAttachment = typeof journalAttachments.$inferInsert;

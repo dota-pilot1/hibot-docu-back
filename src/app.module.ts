@@ -25,6 +25,7 @@ import { BoardsModule } from './boards/boards.module';
 import { PostCommentsModule } from './post-comments/post-comments.module';
 import { PostLikesModule } from './post-likes/post-likes.module';
 import { PostAttachmentsModule } from './post-attachments/post-attachments.module';
+import { JournalsModule } from './journals/journals.module';
 
 @Module({
   imports: [
@@ -54,6 +55,7 @@ import { PostAttachmentsModule } from './post-attachments/post-attachments.modul
     PostCommentsModule,
     PostLikesModule,
     PostAttachmentsModule,
+    JournalsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
