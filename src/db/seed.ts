@@ -1,7 +1,7 @@
 import { eq } from 'drizzle-orm';
 import * as bcrypt from 'bcrypt';
 import { db } from './client';
-import { users } from './schema';
+import { users, boards } from './schema';
 
 const ADMIN_EMAIL = 'terecal@daum.net';
 const ADMIN_PASSWORD = 'hyun0316';
@@ -36,5 +36,39 @@ export async function seedAdminUser() {
     console.log(`[Seed] Admin user created: ${newAdmin.email}`);
   } catch (error) {
     console.error('[Seed] Failed to seed admin user:', error);
+  }
+}
+
+// 기본 게시판 데이터
+const DEFAULT_BOARDS = [
+  {
+    code: 'notice',
+    name: '공지사항',
+    boardType: 'NOTICE' as const,
+    displayOrder: 0,
+  },
+  {
+    code: 'free',
+    name: '자유게시판',
+    boardType: 'GENERAL' as const,
+    displayOrder: 1,
+  },
+  { code: 'qna', name: 'Q&A', boardType: 'QNA' as const, displayOrder: 2 },
+];
+
+export async function seedBoards() {
+  try {
+    for (const board of DEFAULT_BOARDS) {
+      const existing = await db.query.boards.findFirst({
+        where: eq(boards.code, board.code),
+      });
+
+      if (!existing) {
+        await db.insert(boards).values(board);
+        console.log(`[Seed] Board created: ${board.name} (${board.code})`);
+      }
+    }
+  } catch (error) {
+    console.error('[Seed] Failed to seed boards:', error);
   }
 }

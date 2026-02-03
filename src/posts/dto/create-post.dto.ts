@@ -1,4 +1,10 @@
-import { IsNotEmpty, IsString, MaxLength } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsString,
+  MaxLength,
+  IsOptional,
+  IsBoolean,
+} from 'class-validator';
 
 export class CreatePostDto {
   @IsNotEmpty({ message: '제목을 입력해주세요.' })
@@ -9,4 +15,8 @@ export class CreatePostDto {
   @IsNotEmpty({ message: '내용을 입력해주세요.' })
   @IsString()
   content: string;
+
+  @IsOptional()
+  @IsBoolean()
+  isPinned?: boolean;
 }

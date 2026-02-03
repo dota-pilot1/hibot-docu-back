@@ -21,6 +21,10 @@ import { ReviewsModule } from './reviews/reviews.module';
 import { DbAdminModule } from './db-admin/db-admin.module';
 import { FavoritesModule } from './favorites/favorites.module';
 import { SkillsModule } from './skills/skills.module';
+import { BoardsModule } from './boards/boards.module';
+import { PostCommentsModule } from './post-comments/post-comments.module';
+import { PostLikesModule } from './post-likes/post-likes.module';
+import { PostAttachmentsModule } from './post-attachments/post-attachments.module';
 
 @Module({
   imports: [
@@ -46,6 +50,10 @@ import { SkillsModule } from './skills/skills.module';
     ChatRoomsModule,
     TasksModule,
     SkillsModule,
+    BoardsModule,
+    PostCommentsModule,
+    PostLikesModule,
+    PostAttachmentsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

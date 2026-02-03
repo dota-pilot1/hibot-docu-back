@@ -9,7 +9,7 @@ import {
   pgEnum,
   jsonb,
 } from 'drizzle-orm/pg-core';
-import { sql } from 'drizzle-orm';
+import { relations, sql } from 'drizzle-orm';
 
 export const architectureTypeEnum = pgEnum('architecture_type', [
   'ROOT',
@@ -175,16 +175,196 @@ export const departments = pgTable('departments', {
 export type Department = typeof departments.$inferSelect;
 export type NewDepartment = typeof departments.$inferInsert;
 
-// Posts table (게시판)
+// ============================================
+// Board System (게시판 시스템)
+// ============================================
+
+// Board type enum
+export const boardTypeEnum = pgEnum('board_type', [
+  'GENERAL', // 일반 게시판
+  'NOTICE', // 공지사항
+  'QNA', // Q&A
+  'GALLERY', // 갤러리
+]);
+
+// Post status enum
+export const postStatusEnum = pgEnum('post_status', [
+  'DRAFT', // 임시저장
+  'PUBLISHED', // 게시됨
+  'HIDDEN', // 숨김
+]);
+
+// Boards table (게시판 정의)
+export const boards = pgTable('boards', {
+  id: serial('id').primaryKey(),
+  code: varchar('code', { length: 50 }).notNull().unique(), // notice, free, qna 등
+  name: varchar('name', { length: 100 }).notNull(),
+  description: text('description'),
+  boardType: boardTypeEnum('board_type').default('GENERAL').notNull(),
+  readPermission: varchar('read_permission', { length: 20 })
+    .default('ALL')
+    .notNull(),
+  writePermission: varchar('write_permission', { length: 20 })
+    .default('USER')
+    .notNull(),
+  config: jsonb('config').default(sql`'{}'::jsonb`), // 기능 설정
+  icon: varchar('icon', { length: 50 }),
+  displayOrder: integer('display_order').default(0).notNull(),
+  isActive: boolean('is_active').default(true).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+export type Board = typeof boards.$inferSelect;
+export type NewBoard = typeof boards.$inferInsert;
+
+// Posts table (게시글)
 export const posts = pgTable('posts', {
   id: serial('id').primaryKey(),
+  boardId: integer('board_id').notNull(),
   title: varchar('title', { length: 255 }).notNull(),
   content: text('content').notNull(),
   authorId: integer('author_id').notNull(),
   viewCount: integer('view_count').default(0).notNull(),
+  likeCount: integer('like_count').default(0).notNull(),
+  commentCount: integer('comment_count').default(0).notNull(),
+  isPinned: boolean('is_pinned').default(false).notNull(),
+  status: postStatusEnum('status').default('PUBLISHED').notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
+
+// Post comments table (게시글 댓글)
+export const postComments = pgTable('post_comments', {
+  id: serial('id').primaryKey(),
+  postId: integer('post_id').notNull(),
+  authorId: integer('author_id').notNull(),
+  content: text('content').notNull(),
+  parentId: integer('parent_id'), // 대댓글인 경우 부모 댓글 ID
+  depth: integer('depth').default(0).notNull(), // 0: 댓글, 1: 대댓글
+  isDeleted: boolean('is_deleted').default(false).notNull(),
+  isEdited: boolean('is_edited').default(false).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+export type PostComment = typeof postComments.$inferSelect;
+export type NewPostComment = typeof postComments.$inferInsert;
+
+// Post likes table (게시글 좋아요)
+export const postLikes = pgTable('post_likes', {
+  id: serial('id').primaryKey(),
+  postId: integer('post_id').notNull(),
+  userId: integer('user_id').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+export type PostLike = typeof postLikes.$inferSelect;
+export type NewPostLike = typeof postLikes.$inferInsert;
+
+// Post attachments table (게시글 첨부파일)
+export const postAttachments = pgTable('post_attachments', {
+  id: serial('id').primaryKey(),
+  postId: integer('post_id').notNull(),
+  originalName: varchar('original_name', { length: 255 }).notNull(),
+  storedName: varchar('stored_name', { length: 255 }).notNull(),
+  filePath: text('file_path').notNull(),
+  s3Url: text('s3_url'),
+  fileSize: integer('file_size').notNull(),
+  mimeType: varchar('mime_type', { length: 100 }).notNull(),
+  displayOrder: integer('display_order').default(0).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+export type PostAttachment = typeof postAttachments.$inferSelect;
+export type NewPostAttachment = typeof postAttachments.$inferInsert;
+
+// Post views table (조회 기록 - 중복 방지용)
+export const postViews = pgTable('post_views', {
+  id: serial('id').primaryKey(),
+  postId: integer('post_id').notNull(),
+  userId: integer('user_id'), // NULL이면 비회원
+  ipAddress: varchar('ip_address', { length: 45 }), // IPv6 지원
+  viewedAt: timestamp('viewed_at').defaultNow().notNull(),
+});
+
+export type PostView = typeof postViews.$inferSelect;
+export type NewPostView = typeof postViews.$inferInsert;
+
+// ============================================
+// Board Relations (게시판 관계 정의)
+// ============================================
+
+export const boardsRelations = relations(boards, ({ many }) => ({
+  posts: many(posts),
+}));
+
+export const postsRelations = relations(posts, ({ one, many }) => ({
+  board: one(boards, {
+    fields: [posts.boardId],
+    references: [boards.id],
+  }),
+  author: one(users, {
+    fields: [posts.authorId],
+    references: [users.id],
+  }),
+  comments: many(postComments),
+  likes: many(postLikes),
+  attachments: many(postAttachments),
+  views: many(postViews),
+}));
+
+export const postCommentsRelations = relations(
+  postComments,
+  ({ one, many }) => ({
+    post: one(posts, {
+      fields: [postComments.postId],
+      references: [posts.id],
+    }),
+    author: one(users, {
+      fields: [postComments.authorId],
+      references: [users.id],
+    }),
+    parent: one(postComments, {
+      fields: [postComments.parentId],
+      references: [postComments.id],
+      relationName: 'commentReplies',
+    }),
+    replies: many(postComments, { relationName: 'commentReplies' }),
+  }),
+);
+
+export const postLikesRelations = relations(postLikes, ({ one }) => ({
+  post: one(posts, {
+    fields: [postLikes.postId],
+    references: [posts.id],
+  }),
+  user: one(users, {
+    fields: [postLikes.userId],
+    references: [users.id],
+  }),
+}));
+
+export const postAttachmentsRelations = relations(
+  postAttachments,
+  ({ one }) => ({
+    post: one(posts, {
+      fields: [postAttachments.postId],
+      references: [posts.id],
+    }),
+  }),
+);
+
+export const postViewsRelations = relations(postViews, ({ one }) => ({
+  post: one(posts, {
+    fields: [postViews.postId],
+    references: [posts.id],
+  }),
+  user: one(users, {
+    fields: [postViews.userId],
+    references: [users.id],
+  }),
+}));
 
 export type ArchitectureCategory = typeof architectureCategories.$inferSelect;
 export type NewArchitectureCategory =
