@@ -698,6 +698,19 @@ export const taskIssueReplies = pgTable('task_issue_replies', {
 export type TaskIssueReply = typeof taskIssueReplies.$inferSelect;
 export type NewTaskIssueReply = typeof taskIssueReplies.$inferInsert;
 
+// Task reviews table (업무 리뷰/노트 - 모든 상태 변경에 대한 기록)
+export const taskReviews = pgTable('task_reviews', {
+  id: serial('id').primaryKey(),
+  taskId: integer('task_id').notNull(),
+  status: taskStatusEnum('status').notNull(), // 어떤 상태에 대한 리뷰인지
+  content: text('content').notNull(), // Lexical editor JSON
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  createdBy: integer('created_by').notNull(),
+});
+
+export type TaskReview = typeof taskReviews.$inferSelect;
+export type NewTaskReview = typeof taskReviews.$inferInsert;
+
 // ============================================
 // Task Details (업무 상세)
 // ============================================
