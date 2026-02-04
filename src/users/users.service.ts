@@ -2,7 +2,7 @@ import { Injectable, ConflictException } from '@nestjs/common';
 import { eq, inArray } from 'drizzle-orm';
 import * as bcrypt from 'bcrypt';
 import { db } from '../db/client';
-import { users, User, NewUser } from '../db/schema';
+import { users, User, NewUser, departments } from '../db/schema';
 
 @Injectable()
 export class UsersService {
@@ -24,9 +24,41 @@ export class UsersService {
     return user;
   }
 
-  async findAll(): Promise<Omit<User, 'password'>[]> {
-    const allUsers = await db.select().from(users);
-    return allUsers.map(({ password, ...result }) => result);
+  async findAll(): Promise<
+    (Omit<User, 'password'> & { department?: { id: number; name: string } })[]
+  > {
+    const allUsers = await db
+      .select({
+        id: users.id,
+        email: users.email,
+        name: users.name,
+        profileImage: users.profileImage,
+        role: users.role,
+        departmentId: users.departmentId,
+        displayOrder: users.displayOrder,
+        isActive: users.isActive,
+        createdAt: users.createdAt,
+        updatedAt: users.updatedAt,
+        departmentName: departments.name,
+      })
+      .from(users)
+      .leftJoin(departments, eq(users.departmentId, departments.id));
+
+    return allUsers.map((user) => ({
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      profileImage: user.profileImage,
+      role: user.role,
+      departmentId: user.departmentId,
+      displayOrder: user.displayOrder,
+      isActive: user.isActive,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+      department: user.departmentId
+        ? { id: user.departmentId, name: user.departmentName || '' }
+        : undefined,
+    }));
   }
 
   async create(userData: {
