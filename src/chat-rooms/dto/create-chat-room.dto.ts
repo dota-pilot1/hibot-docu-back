@@ -9,8 +9,9 @@ import {
 } from 'class-validator';
 
 export class CreateChatRoomDto {
+  @IsOptional()
   @IsNumber()
-  teamId: number;
+  teamId?: number; // nullable - NULL이면 전체 채팅방
 
   @IsString()
   @MaxLength(100)

@@ -20,6 +20,12 @@ export class ChatRoomsController {
 
   // === Chat Rooms ===
 
+  // 전체 채팅방 목록 (teamId가 NULL인 방)
+  @Get('global')
+  findGlobalRooms() {
+    return this.chatRoomsService.findGlobalRooms();
+  }
+
   @Get()
   findAll(@Query('teamId') teamId?: string) {
     if (teamId) {

@@ -545,9 +545,10 @@ export const chatMessageTypeEnum = pgEnum('chat_message_type', [
 ]);
 
 // Chat rooms table (채팅방)
+// teamId가 NULL이면 전체 채팅방 (Global Chat)
 export const chatRooms = pgTable('chat_rooms', {
   id: serial('id').primaryKey(),
-  teamId: integer('team_id').notNull(),
+  teamId: integer('team_id'), // nullable - NULL이면 전체 채팅방
   name: varchar('name', { length: 100 }).notNull(),
   description: text('description'),
   roomType: chatRoomTypeEnum('room_type').default('GENERAL').notNull(),

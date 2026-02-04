@@ -30,7 +30,23 @@ export class JournalsService {
       .where(and(...conditions))
       .orderBy(journalCategories.displayOrder);
 
-    return this.buildTree(categories);
+    // Get journal counts for each category
+    const journalCounts = new Map<number, number>();
+    for (const category of categories) {
+      const count = await db
+        .select()
+        .from(journals)
+        .where(
+          and(
+            eq(journals.categoryId, category.id),
+            eq(journals.userId, userId),
+            eq(journals.isActive, true),
+          ),
+        );
+      journalCounts.set(category.id, count.length);
+    }
+
+    return this.buildTree(categories, journalCounts);
   }
 
   async createCategory(
@@ -331,12 +347,16 @@ export class JournalsService {
   // Helper methods
   // ============================================
 
-  private buildTree(categories: any[]): any[] {
+  private buildTree(
+    categories: any[],
+    journalCounts?: Map<number, number>,
+  ): any[] {
     const map = new Map<number, any>();
     const roots: any[] = [];
 
     categories.forEach((cat) => {
-      map.set(cat.id, { ...cat, children: [] });
+      const journalCount = journalCounts?.get(cat.id) || 0;
+      map.set(cat.id, { ...cat, children: [], journalCount });
     });
 
     categories.forEach((cat) => {

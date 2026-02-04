@@ -6,7 +6,7 @@ import {
   chatMessages,
   users,
 } from '../db/schema';
-import { eq, asc, desc, and } from 'drizzle-orm';
+import { eq, asc, desc, and, isNull } from 'drizzle-orm';
 import { CreateChatRoomDto } from './dto/create-chat-room.dto';
 import { UpdateChatRoomDto } from './dto/update-chat-room.dto';
 import { CreateChatMessageDto } from './dto/create-chat-message.dto';
@@ -31,6 +31,15 @@ export class ChatRoomsService {
       .orderBy(asc(chatRooms.displayOrder), asc(chatRooms.id));
   }
 
+  // 전체 채팅방 목록 (teamId가 NULL인 방)
+  async findGlobalRooms() {
+    return db
+      .select()
+      .from(chatRooms)
+      .where(and(isNull(chatRooms.teamId), eq(chatRooms.isActive, true)))
+      .orderBy(asc(chatRooms.displayOrder), asc(chatRooms.id));
+  }
+
   async findOne(id: number) {
     const [room] = await db
       .select()
@@ -48,7 +57,7 @@ export class ChatRoomsService {
     const [room] = await db
       .insert(chatRooms)
       .values({
-        teamId: dto.teamId,
+        teamId: dto.teamId ?? null, // undefined면 null로 (전체 채팅방)
         name: dto.name,
         description: dto.description,
         roomType: dto.roomType,
