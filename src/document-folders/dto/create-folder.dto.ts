@@ -22,6 +22,15 @@ export class CreateFolderDto {
   @IsInt()
   parentId?: number;
 
+  @ApiProperty({
+    description: '폴더 타입 (general | figma)',
+    required: false,
+    default: 'general',
+  })
+  @IsOptional()
+  @IsString()
+  type?: string;
+
   @ApiProperty({ description: '정렬 순서', required: false, default: 0 })
   @IsOptional()
   @IsInt()

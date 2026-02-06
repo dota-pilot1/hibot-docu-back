@@ -477,6 +477,7 @@ export const documentFolders = pgTable('document_folders', {
   id: serial('id').primaryKey(),
   name: varchar('name', { length: 100 }).notNull(),
   parentId: integer('parent_id'),
+  type: varchar('type', { length: 20 }).default('general').notNull(),
   displayOrder: integer('display_order').default(0).notNull(),
   isActive: boolean('is_active').default(true).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),

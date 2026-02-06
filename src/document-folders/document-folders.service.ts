@@ -12,6 +12,7 @@ import { UpdateFolderDto } from './dto/update-folder.dto';
 export interface DocumentInfo {
   id: number;
   title: string;
+  content: string | null;
   originalName: string | null;
   mimeType: string | null;
   fileSize: number | null;
@@ -40,6 +41,7 @@ export class DocumentFoldersService {
       .values({
         name: createFolderDto.name,
         parentId: createFolderDto.parentId ?? null,
+        type: createFolderDto.type ?? 'general',
         displayOrder: createFolderDto.displayOrder ?? 0,
       })
       .returning();
@@ -69,6 +71,7 @@ export class DocumentFoldersService {
       .select({
         id: documents.id,
         title: documents.title,
+        content: documents.content,
         folderId: documents.folderId,
         originalName: documents.originalName,
         mimeType: documents.mimeType,
@@ -88,6 +91,7 @@ export class DocumentFoldersService {
       const docInfo: DocumentInfo = {
         id: doc.id,
         title: doc.title,
+        content: doc.content,
         originalName: doc.originalName,
         mimeType: doc.mimeType,
         fileSize: doc.fileSize,
