@@ -1,25 +1,45 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { db } from '../db/client';
 import { documentFolders, documents, DocumentFolder } from '../db/schema';
-import { eq, asc } from 'drizzle-orm';
+import { eq, asc, isNull, and } from 'drizzle-orm';
 import { CreateFolderDto } from './dto/create-folder.dto';
 import { UpdateFolderDto } from './dto/update-folder.dto';
 
-export interface FolderWithDocuments extends DocumentFolder {
-  documents: Array<{
-    id: number;
-    title: string;
-    updatedAt: Date;
-  }>;
+export interface DocumentInfo {
+  id: number;
+  title: string;
+  originalName: string | null;
+  mimeType: string | null;
+  fileSize: number | null;
+  s3Url: string | null;
+  updatedAt: Date;
+}
+
+export interface FolderWithChildren extends DocumentFolder {
+  children: FolderWithChildren[];
+  documents: DocumentInfo[];
 }
 
 @Injectable()
 export class DocumentFoldersService {
   async create(createFolderDto: CreateFolderDto): Promise<DocumentFolder> {
+    // 2단계 제한: parentId가 있으면 해당 부모가 최상위인지 확인
+    if (createFolderDto.parentId) {
+      const parent = await this.findOne(createFolderDto.parentId);
+      if (parent.parentId !== null) {
+        throw new BadRequestException('하위 폴더는 2단계까지만 지원됩니다.');
+      }
+    }
+
     const [newFolder] = await db
       .insert(documentFolders)
       .values({
         name: createFolderDto.name,
+        parentId: createFolderDto.parentId ?? null,
         displayOrder: createFolderDto.displayOrder ?? 0,
       })
       .returning();
@@ -36,12 +56,8 @@ export class DocumentFoldersService {
   }
 
   async findAllWithDocuments(): Promise<{
-    folders: FolderWithDocuments[];
-    unassignedDocuments: Array<{
-      id: number;
-      title: string;
-      updatedAt: Date;
-    }>;
+    folders: FolderWithChildren[];
+    unassignedDocuments: DocumentInfo[];
   }> {
     const allFolders = await db
       .select()
@@ -54,37 +70,62 @@ export class DocumentFoldersService {
         id: documents.id,
         title: documents.title,
         folderId: documents.folderId,
+        originalName: documents.originalName,
+        mimeType: documents.mimeType,
+        fileSize: documents.fileSize,
+        s3Url: documents.s3Url,
         updatedAt: documents.updatedAt,
       })
       .from(documents)
       .where(eq(documents.isActive, true))
       .orderBy(asc(documents.title));
 
-    const docsByFolder = new Map<number, typeof allDocuments>();
-    const unassignedDocuments: typeof allDocuments = [];
+    // 폴더별 문서 그룹핑
+    const docsByFolder = new Map<number, DocumentInfo[]>();
+    const unassignedDocuments: DocumentInfo[] = [];
 
     allDocuments.forEach((doc) => {
+      const docInfo: DocumentInfo = {
+        id: doc.id,
+        title: doc.title,
+        originalName: doc.originalName,
+        mimeType: doc.mimeType,
+        fileSize: doc.fileSize,
+        s3Url: doc.s3Url,
+        updatedAt: doc.updatedAt,
+      };
       if (doc.folderId) {
         const folderDocs = docsByFolder.get(doc.folderId) || [];
-        folderDocs.push(doc);
+        folderDocs.push(docInfo);
         docsByFolder.set(doc.folderId, folderDocs);
       } else {
-        unassignedDocuments.push(doc);
+        unassignedDocuments.push(docInfo);
       }
     });
 
-    const folders: FolderWithDocuments[] = allFolders.map((folder) => ({
-      ...folder,
-      documents: (docsByFolder.get(folder.id) || []).map(
-        ({ folderId, ...doc }) => doc,
-      ),
-    }));
+    // 트리 구조 빌드: 최상위 폴더 → children(하위 폴더)
+    const folderMap = new Map<number, FolderWithChildren>();
+    allFolders.forEach((folder) => {
+      folderMap.set(folder.id, {
+        ...folder,
+        children: [],
+        documents: docsByFolder.get(folder.id) || [],
+      });
+    });
+
+    const rootFolders: FolderWithChildren[] = [];
+    allFolders.forEach((folder) => {
+      const node = folderMap.get(folder.id)!;
+      if (folder.parentId && folderMap.has(folder.parentId)) {
+        folderMap.get(folder.parentId)!.children.push(node);
+      } else {
+        rootFolders.push(node);
+      }
+    });
 
     return {
-      folders,
-      unassignedDocuments: unassignedDocuments.map(
-        ({ folderId, ...doc }) => doc,
-      ),
+      folders: rootFolders,
+      unassignedDocuments,
     };
   }
 
@@ -123,17 +164,41 @@ export class DocumentFoldersService {
   async remove(id: number): Promise<void> {
     await this.findOne(id);
 
+    // 하위 폴더도 함께 soft delete
+    const childFolders = await db
+      .select()
+      .from(documentFolders)
+      .where(
+        and(
+          eq(documentFolders.parentId, id),
+          eq(documentFolders.isActive, true),
+        ),
+      );
+
+    for (const child of childFolders) {
+      // 하위 폴더의 문서 → 미분류
+      await db
+        .update(documents)
+        .set({ folderId: null, updatedAt: new Date() })
+        .where(eq(documents.folderId, child.id));
+
+      await db
+        .update(documentFolders)
+        .set({ isActive: false, updatedAt: new Date() })
+        .where(eq(documentFolders.id, child.id));
+    }
+
+    // 해당 폴더의 문서들 → 미분류
+    await db
+      .update(documents)
+      .set({ folderId: null, updatedAt: new Date() })
+      .where(eq(documents.folderId, id));
+
     // 소프트 삭제
     await db
       .update(documentFolders)
       .set({ isActive: false, updatedAt: new Date() })
       .where(eq(documentFolders.id, id));
-
-    // 해당 폴더의 문서들 folderId를 null로
-    await db
-      .update(documents)
-      .set({ folderId: null, updatedAt: new Date() })
-      .where(eq(documents.folderId, id));
   }
 
   async reorder(folderIds: number[]): Promise<void> {

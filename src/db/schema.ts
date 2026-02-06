@@ -476,6 +476,7 @@ export type NewUser = typeof users.$inferInsert;
 export const documentFolders = pgTable('document_folders', {
   id: serial('id').primaryKey(),
   name: varchar('name', { length: 100 }).notNull(),
+  parentId: integer('parent_id'),
   displayOrder: integer('display_order').default(0).notNull(),
   isActive: boolean('is_active').default(true).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
@@ -485,12 +486,19 @@ export const documentFolders = pgTable('document_folders', {
 export type DocumentFolder = typeof documentFolders.$inferSelect;
 export type NewDocumentFolder = typeof documentFolders.$inferInsert;
 
-// Documents table (문서)
+// Documents table (문서 = 업로드 파일)
 export const documents = pgTable('documents', {
   id: serial('id').primaryKey(),
   title: varchar('title', { length: 200 }).notNull(),
   content: text('content').default(''),
   folderId: integer('folder_id'),
+  // 파일 관련 필드
+  originalName: varchar('original_name', { length: 255 }),
+  storedName: varchar('stored_name', { length: 255 }),
+  s3Url: text('s3_url'),
+  filePath: text('file_path'),
+  fileSize: integer('file_size'),
+  mimeType: varchar('mime_type', { length: 100 }),
   createdBy: integer('created_by'),
   updatedBy: integer('updated_by'),
   isActive: boolean('is_active').default(true).notNull(),
