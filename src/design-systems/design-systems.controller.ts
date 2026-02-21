@@ -22,8 +22,8 @@ import {
   ApiConsumes,
 } from '@nestjs/swagger';
 import { DesignSystemsService } from './design-systems.service';
-import { CreateCategoryDto } from './dto/create-category.dto';
-import { UpdateCategoryDto } from './dto/update-category.dto';
+import { CreateDesignSystemCategoryDto } from './dto/create-category.dto';
+import { UpdateDesignSystemCategoryDto } from './dto/update-category.dto';
 import { CreateContentDto } from './dto/create-content.dto';
 import { UpdateContentDto } from './dto/update-content.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -52,7 +52,10 @@ export class DesignSystemsController {
 
   @Post('categories')
   @ApiOperation({ summary: 'Create a new category' })
-  createCategory(@Request() req: any, @Body() dto: CreateCategoryDto) {
+  createCategory(
+    @Request() req: any,
+    @Body() dto: CreateDesignSystemCategoryDto,
+  ) {
     return this.designSystemsService.createCategory(req.user.userId, dto);
   }
 
@@ -70,7 +73,10 @@ export class DesignSystemsController {
 
   @Patch('categories/:id')
   @ApiOperation({ summary: 'Update a category' })
-  updateCategory(@Param('id') id: string, @Body() dto: UpdateCategoryDto) {
+  updateCategory(
+    @Param('id') id: string,
+    @Body() dto: UpdateDesignSystemCategoryDto,
+  ) {
     return this.designSystemsService.updateCategory(+id, dto);
   }
 

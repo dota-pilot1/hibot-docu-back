@@ -8,7 +8,7 @@ import {
 import { ArchitectureType } from '../types/architecture-type';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 
-export class UpdateCategoryDto {
+export class UpdateArchitectureCategoryDto {
   @ApiPropertyOptional({ example: 'Updated Name' })
   @IsOptional()
   @IsString()

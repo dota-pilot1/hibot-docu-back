@@ -2,7 +2,7 @@ import { IsString, IsOptional, IsEnum, IsNumber } from 'class-validator';
 import { ArchitectureType } from '../types/architecture-type';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
-export class CreateCategoryDto {
+export class CreateArchitectureCategoryDto {
   @ApiProperty({ example: 'Frontend Development' })
   @IsString()
   name: string;

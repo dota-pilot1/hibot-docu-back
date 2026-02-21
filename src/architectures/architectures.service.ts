@@ -11,8 +11,8 @@ import type {
   ArchitectureContent,
   ArchitectureCategoryFile,
 } from '../db/schema';
-import { CreateCategoryDto } from './dto/create-category.dto';
-import { UpdateCategoryDto } from './dto/update-category.dto';
+import { CreateArchitectureCategoryDto } from './dto/create-category.dto';
+import { UpdateArchitectureCategoryDto } from './dto/update-category.dto';
 import { CreateContentDto } from './dto/create-content.dto';
 import { UpdateContentDto } from './dto/update-content.dto';
 import { S3Service } from '../common/s3.service';
@@ -61,7 +61,7 @@ export class ArchitecturesService {
 
   async createCategory(
     userId: number,
-    dto: CreateCategoryDto,
+    dto: CreateArchitectureCategoryDto,
   ): Promise<ArchitectureCategory> {
     let depth = 0;
     if (dto.parentId) {
@@ -93,7 +93,7 @@ export class ArchitecturesService {
 
   async updateCategory(
     id: number,
-    dto: UpdateCategoryDto,
+    dto: UpdateArchitectureCategoryDto,
   ): Promise<ArchitectureCategory> {
     const existing = await db
       .select()

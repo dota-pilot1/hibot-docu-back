@@ -11,8 +11,8 @@ import type {
   DesignSystemContent,
   DesignSystemCategoryFile,
 } from '../db/schema';
-import { CreateCategoryDto } from './dto/create-category.dto';
-import { UpdateCategoryDto } from './dto/update-category.dto';
+import { CreateDesignSystemCategoryDto } from './dto/create-category.dto';
+import { UpdateDesignSystemCategoryDto } from './dto/update-category.dto';
 import { CreateContentDto } from './dto/create-content.dto';
 import { UpdateContentDto } from './dto/update-content.dto';
 import { S3Service } from '../common/s3.service';
@@ -61,7 +61,7 @@ export class DesignSystemsService {
 
   async createCategory(
     userId: number,
-    dto: CreateCategoryDto,
+    dto: CreateDesignSystemCategoryDto,
   ): Promise<DesignSystemCategory> {
     let depth = 0;
     if (dto.parentId) {
@@ -93,7 +93,7 @@ export class DesignSystemsService {
 
   async updateCategory(
     id: number,
-    dto: UpdateCategoryDto,
+    dto: UpdateDesignSystemCategoryDto,
   ): Promise<DesignSystemCategory> {
     const existing = await db
       .select()

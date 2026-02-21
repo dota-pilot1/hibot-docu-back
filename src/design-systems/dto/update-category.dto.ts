@@ -8,7 +8,7 @@ import {
 import { DesignSystemType } from '../types/design-system-type';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 
-export class UpdateCategoryDto {
+export class UpdateDesignSystemCategoryDto {
   @ApiPropertyOptional({ example: 'Updated Name' })
   @IsOptional()
   @IsString()
