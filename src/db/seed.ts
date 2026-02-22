@@ -34,8 +34,15 @@ export async function seedAdminUser() {
       .returning();
 
     console.log(`[Seed] Admin user created: ${newAdmin.email}`);
-  } catch (error) {
-    console.error('[Seed] Failed to seed admin user:', error);
+  } catch (error: any) {
+    // 친절한 에러 메시지 제공
+    if (error?.cause?.code === '42P01') {
+      console.warn('[Seed] ⚠️  데이터베이스 테이블이 아직 생성되지 않았습니다.');
+      console.warn('[Seed] 해결 방법: drizzle-kit을 사용하여 마이그레이션을 생성하거나 수동으로 데이터베이스 스키마를 생성하세요.');
+      return;
+    }
+    
+    console.error('[Seed] ❌ 관리자 사용자 생성 실패:', error?.message || error);
   }
 }
 
@@ -68,7 +75,14 @@ export async function seedBoards() {
         console.log(`[Seed] Board created: ${board.name} (${board.code})`);
       }
     }
-  } catch (error) {
-    console.error('[Seed] Failed to seed boards:', error);
+  } catch (error: any) {
+    // 친절한 에러 메시지 제공
+    if (error?.cause?.code === '42P01') {
+      console.warn('[Seed] ⚠️  데이터베이스 테이블이 아직 생성되지 않았습니다.');
+      console.warn('[Seed] 해결 방법: drizzle-kit을 사용하여 마이그레이션을 생성하거나 수동으로 데이터베이스 스키마를 생성하세요.');
+      return;
+    }
+    
+    console.error('[Seed] ❌ 게시판 데이터 생성 실패:', error?.message || error);
   }
 }

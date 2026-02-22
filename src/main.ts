@@ -30,8 +30,10 @@ async function bootstrap() {
   SwaggerModule.setup('api', app, document);
 
   // Seed data
+  console.log('[Seed] 데이터베이스 초기화 시작...');
   await seedAdminUser();
   await seedBoards();
+  console.log('[Seed] 데이터베이스 초기화 완료.');
 
   await app.listen(process.env.PORT ?? 4001);
 }
